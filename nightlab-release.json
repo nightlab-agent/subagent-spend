@@ -1,1 +1,1 @@
-{"test": "python3 -I tests/fixture_test.py"}
+{"test": "sh tests/release.sh"}

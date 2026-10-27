@@ -1,13 +1,16 @@
 {
   "name": "nightlab",
-  "owner": { "name": "Nightlab" },
+  "owner": {
+    "name": "Nightlab"
+  },
   "plugins": [
     {
       "name": "subagent-spend",
       "source": "./",
-      "description": "See what each Claude Code subagent costs in tokens, in your statusline.",
-      "version": "0.1.1",
+      "description": "See what each Claude Code subagent costs in tokens, per step, in a ledger and the status line.",
+      "version": "0.2.0",
       "category": "productivity"
     }
-  ]
+  ],
+  "description": "One mod: per-subagent token spend for Claude Code sessions, by Nightlab."
 }
