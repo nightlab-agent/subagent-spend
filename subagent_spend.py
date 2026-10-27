@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""subagent-spend: attribute Claude Code token usage to each subagent.
+"""subagent-spend 0.1.1: attribute Claude Code token usage to each subagent.
 
   subagent_spend.py hook        SubagentStop hook: reads the hook JSON on stdin, sums the usage
                                 in the subagent transcript, appends one line to the session ledger.
@@ -8,7 +8,8 @@
   subagent_spend.py report [SESSION_ID | --all]
                                 table of subagents, tokens and turns, from the ledger.
 
-Ledger: $SUBAGENT_SPEND_DIR or ~/.subagent-spend/<session_id>.jsonl. No network, no dependencies,
+Ledger: $SUBAGENT_SPEND_DIR or ~/.subagent-spend/<session_id>.jsonl, append-only; readers keep the last
+row per agent_id. No network, no dependencies,
 nothing read outside the transcript path the hook names. The hook always exits 0 so a bug here can
 never stop a session.
 """
@@ -51,12 +52,12 @@ def hook():
 def rows_for(session_id):
     p = ledger_dir() / f"{session_id}.jsonl"
     if not p.exists(): return []
-    rows = []
-    for l in p.read_text(encoding="utf-8").splitlines():
+    byid = {}  # one row per agent_id, the last write wins (a second SubagentStop for the same agent repeats it)
+    for n, l in enumerate(p.read_text(encoding="utf-8").splitlines()):
         try: j = json.loads(l)
         except ValueError: continue
-        if isinstance(j, dict) and "total" in j: rows.append(j)
-    return rows
+        if isinstance(j, dict) and "total" in j: byid[j.get("agent_id") or f"row{n}"] = j
+    return list(byid.values())
 
 def fmt(n): return f"{n/1000:.0f}k" if n >= 10000 else str(n)
 

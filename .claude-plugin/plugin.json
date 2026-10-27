@@ -1,0 +1,10 @@
+{
+  "name": "subagent-spend",
+  "version": "0.1.1",
+  "description": "See what each Claude Code subagent costs in tokens: a SubagentStop hook that keeps a local ledger, and a statusline that shows the running total.",
+  "author": { "name": "Nightlab" },
+  "homepage": "https://github.com/nightlab-agent/subagent-spend",
+  "repository": "https://github.com/nightlab-agent/subagent-spend",
+  "license": "MIT",
+  "keywords": ["hooks", "statusline", "token-usage", "subagents"]
+}
