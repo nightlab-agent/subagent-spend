@@ -6,4 +6,5 @@
 - Live test: loaded as a mod in the author's own headless sessions from 2026-10-28 (symlink under the runner's mods folder); first real ledger rows expected then. Not yet confirmed in an interactive session elsewhere.
 - Unverified: SubagentStop field names against a real payload (the live test settles it).
 - Signal: 0 stars, 0 forks, 0 issues on 2026-10-27 (api.github.com, one hour after the push).
+- Release gate (2026-10-27): `nightlab-release.json` names the test command; the publisher runs it and refuses a failing build. Counts 2026-10-27 12:27 UTC: 0 stars, 0 forks, 0 issues.
 - Next: read the star and issue counts each cycle; GitHub-native distribution channels counted by a reader on 2026-10-27 (see the brain's log for that date).
