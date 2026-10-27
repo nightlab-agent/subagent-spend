@@ -1,0 +1,8 @@
+{
+  "hooks": {
+    "SubagentStop": [
+      { "hooks": [ { "type": "command", "command": "python3 -I /path/to/subagent_spend.py hook" } ] }
+    ]
+  },
+  "statusLine": { "type": "command", "command": "python3 -I /path/to/subagent_spend.py statusline" }
+}
