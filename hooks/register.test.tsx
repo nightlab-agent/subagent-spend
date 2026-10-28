@@ -1,4 +1,10 @@
 import { expect, mock, test } from 'claude-code/testing'
+import type { TestBody } from 'claude-code/testing'
+
+// What the engine stamps on a typed command: the person at the composer.
+const RUN = { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 100 } } as const
+// What the engine fills in on an Agent tool call beside the three fields a test names.
+const SPAWN = { tool_use_id: 'toolu_test', provider: { plugin: 'engine', tier: 'core' }, parentModel: 'claude-opus-5-5', background: false, fork: false } as const
 
 // Each test stands for the engine beneath the plugin: it answers `$.fs.write`,
 // `$.ui.status`, `$.session.id`, raises subagent steps with a
@@ -17,7 +23,7 @@ const usage = (i: number, o: number, cr: number, cc: number, model = 'claude-opu
   model,
 })
 
-const world = (on: Parameters<Parameters<typeof test>[1]>[1], answer: () => Usage | null) => {
+const world = (on: Parameters<TestBody>[1], answer: () => Usage | null) => {
   const writes: Written[] = []
   const statuses: (string | undefined)[] = []
   on('fs.write', (_, e) => {
@@ -35,7 +41,7 @@ const world = (on: Parameters<Parameters<typeof test>[1]>[1], answer: () => Usag
   return { writes, statuses }
 }
 
-const step = async ($: Parameters<Parameters<typeof test>[1]>[0], index: number, agentId?: string) => {
+const step = async ($: Parameters<TestBody>[0], index: number, agentId?: string) => {
   const s = $.turn.step({ turnId: 't1', index, model: 'claude-opus-5-5', messageCount: 3 + index, ...(agentId ? { agentId } : {}) })
   // Drain the stream by hand so the generator's return value is what comes back.
   for (;;) {
@@ -120,7 +126,7 @@ test("the agent type from the spawn is carried into the agent's row", async ($, 
     return { value: { isPlaced: true } }
   })
 
-  await $.agent.spawn({ subagentType: 'Explore', prompt: 'count the files', description: 'reader' })
+  await $.agent.spawn({ subagentType: 'Explore', prompt: 'count the files', description: 'reader', ...SPAWN })
   await step($, 7, 'agent-f')
   // The first subagent of the run opens the pane.
   expect(opens).toEqual(['subagent-spend'])
@@ -163,8 +169,8 @@ test('two spawns in one session open the pane once', async ($, on) => {
     return { value: { isPlaced: true } }
   })
   on('agent.spawn', () => ({ model: 'claude-opus-5-5', agentId: 'agent-o' }))
-  await $.agent.spawn({ subagentType: 'Explore', prompt: 'a', description: 'a' })
-  await $.agent.spawn({ subagentType: 'Explore', prompt: 'b', description: 'b' })
+  await $.agent.spawn({ subagentType: 'Explore', prompt: 'a', description: 'a', ...SPAWN })
+  await $.agent.spawn({ subagentType: 'Explore', prompt: 'b', description: 'b', ...SPAWN })
   expect(opens).toBe(1)
 })
 
@@ -189,7 +195,7 @@ test('the command opens the pane and answers with the running total', async ($, 
     opens.push(e.id)
     return { value: { isPlaced: true } }
   })
-  const out = await $.command.run({ command: 'subagent-spend', args: '' })
+  const out = await $.command.run({ command: 'subagent-spend', args: '', ...RUN })
   expect(opens).toEqual(['subagent-spend'])
   expect(out.text).toMatch(/^Subagent spend pane opened\. subagents \d+ \| tok /)
 })

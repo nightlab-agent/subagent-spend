@@ -93,7 +93,7 @@ request) adds nothing.
 
 ## Status
 
-Version 0.5.0, 2026-10-28: the ledger folder is a `dir` option (default
+Version 0.5.1, 2026-10-28: the ledger folder is a `dir` option (default
 `.subagent-spend` in the project) and the module reads no environment; 0.4.2 said what each hook does and writes;
 0.4.1 made `context` equal Claude Code's own figure; 0.3.0 added the side pane; 0.2.0 made
 the plugin a hooks module (per-step usage from the engine) and dropped the

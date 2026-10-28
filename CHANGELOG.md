@@ -4,6 +4,16 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.5.1 - 2026-10-28 - the gate type-checks
+
+### Changed
+- The release gate type-checks the hooks module, its tests and the state contract with `tsc --noEmit` against the
+  engine's own declarations (`tests/typecheck.sh`, the compiler options the declarations' header gives a hooks module).
+  No `tsc` or no declarations fails the gate; it never skips.
+
+### Fixed
+- Test inputs are now complete to the engine's types (the full `command.run`, `agent.spawn` or `turn.step` shapes the tests left out). No behaviour change.
+
 ## 0.5.0 - 2026-10-28 - the ledger folder is an option; the module reads no environment
 
 ### Changed
