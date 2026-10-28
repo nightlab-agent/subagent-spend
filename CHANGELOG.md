@@ -4,6 +4,9 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+### Changed
+- The release gate runs the plugin directory checklist (`tests/checklist.py`, from mod-ready); a FAIL stops a release.
+
 ## 0.5.1 - 2026-10-28 - the gate type-checks
 
 ### Changed
