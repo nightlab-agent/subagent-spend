@@ -4,6 +4,11 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.4.1 - 2026-10-28 - ctx matches Claude Code's own figure
+
+- `context` now adds the last step's reply to its prompt. That is the number Claude Code prints as `subagent_tokens` when a subagent returns: checked live, a one-word subagent read 18,028 in both (0.4.0 said 18,024, short by its 4-token reply) and a five-tool reader 50,279 (0.4.0 said 48,801).
+- The by-hand hook computes it the same way. Tests expect the new sums.
+
 ## 0.4.0 - 2026-10-28 - how full each one got
 
 - Each ledger row gains `context`: the last step's prompt (input + cache read + cache creation), the size of the subagent's context when it ended. `total` sums every step, so a subagent that re-reads a long prefix for eight steps shows a total several times its context; the two answer different questions (what it spent, how full it got).

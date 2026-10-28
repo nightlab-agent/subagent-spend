@@ -43,7 +43,9 @@ would be counted twice.
 For each subagent: model turns and the input, output, cache-read and
 cache-creation tokens the API reported for each of its steps, summed as the
 steps happen, and `context`: the last step's prompt (input, cache read and
-cache creation), how full the subagent's context was when it ended. The total
+cache creation) plus its reply, how full the subagent's context was when it
+ended. It is the same number Claude Code prints as `subagent_tokens` when the
+subagent returns (checked live on two subagents: 18,028 and 50,279). The total
 counts a long prefix again at every step that re-reads it, so it is usually
 several times the context; one says what it spent, the other how full it got.
 The ledger is `~/.subagent-spend/<session_id>.jsonl` (override

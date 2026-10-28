@@ -134,7 +134,7 @@ export const register: Register = on => {
       cache_create: (prior?.cache_create ?? 0) + u.cache_creation_input_tokens,
       turns: (prior?.turns ?? 0) + 1,
       total: 0,
-      context: u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens,
+      context: u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens + u.output_tokens,
       model: u.model || prior?.model || e.model,
     }
     row.total = row.input + row.output + row.cache_read + row.cache_create

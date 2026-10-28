@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""subagent-spend 0.4.0: attribute Claude Code token usage to each subagent.
+"""subagent-spend 0.4.1: attribute Claude Code token usage to each subagent.
 
   subagent_spend.py hook        SubagentStop hook: reads the hook JSON on stdin, sums the usage
                                 in the subagent transcript, appends one line to the session ledger.
@@ -34,8 +34,8 @@ def sum_transcript(path):
         tot["input"] += u.get("input_tokens", 0) or 0; tot["output"] += u.get("output_tokens", 0) or 0
         tot["cache_read"] += u.get("cache_read_input_tokens", 0) or 0; tot["cache_create"] += u.get("cache_creation_input_tokens", 0) or 0
     tot["total"] = tot["input"] + tot["output"] + tot["cache_read"] + tot["cache_create"]; tot["model"] = model
-    last = list(seen.values())[-1]["usage"] if seen else {}  # the newest step: its prompt is the context the agent ended on
-    tot["context"] = sum(last.get(k, 0) or 0 for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
+    last = list(seen.values())[-1]["usage"] if seen else {}  # the newest step: its prompt and reply are the context the agent ended on
+    tot["context"] = sum(last.get(k, 0) or 0 for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "output_tokens"))
     return tot
 
 def hook():

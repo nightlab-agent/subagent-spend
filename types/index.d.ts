@@ -9,7 +9,7 @@ export type Row = {
   cache_create: number
   turns: number
   total: number
-  /** the last step's prompt: input + cache read + cache creation, the subagent's context when it ended */
+  /** the last step's prompt and reply: input + cache read + cache creation + output; equals Claude Code's own subagent_tokens */
   context: number
   model: string
 }
