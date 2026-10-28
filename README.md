@@ -22,7 +22,7 @@ subagent step adds to the pane and the ledger, and the status line reads
 `subagents 2 | tok 7340 (out 120)`. The pane opens by itself when the first
 subagent starts; `/subagent-spend` opens it again, or for the first time on a
 session with none yet. A pane row reads
-`Explore  a1b2c3  8 turns  41k (out 2104)  claude-opus-5-5`.
+`Explore  a1b2c3  8 turns  41k (out 2104, ctx 24k)  claude-opus-5-5`.
 
 By hand, for a Claude Code that loads no hooks modules (three steps):
 
@@ -42,7 +42,11 @@ would be counted twice.
 
 For each subagent: model turns and the input, output, cache-read and
 cache-creation tokens the API reported for each of its steps, summed as the
-steps happen. The ledger is `~/.subagent-spend/<session_id>.jsonl` (override
+steps happen, and `context`: the last step's prompt (input, cache read and
+cache creation), how full the subagent's context was when it ended. The total
+counts a long prefix again at every step that re-reads it, so it is usually
+several times the context; one says what it spent, the other how full it got.
+The ledger is `~/.subagent-spend/<session_id>.jsonl` (override
 the folder with `SUBAGENT_SPEND_DIR`), one JSON row per agent, rewritten after
 every subagent step. The by-hand hook writes the same rows, once per subagent,
 from its transcript when it stops.

@@ -65,6 +65,7 @@ test('a subagent step writes one ledger row with the four counts, the turn, the 
   expect(r.cache_create).toBe(500)
   expect(r.turns).toBe(1)
   expect(r.total).toBe(3640)
+  expect(r.context).toBe(3600)
   expect(r.model).toBe('claude-opus-5-5')
   expect(typeof r.ts).toBe('string')
   expect(statuses.at(-1)).toBe('subagents 1 | tok 3640 (out 40)')
@@ -82,6 +83,7 @@ test('a second step of the same agent updates its row; the file keeps one row pe
   expect(rows[0]!.input).toBe(20)
   expect(rows[0]!.output).toBe(40)
   expect(rows[0]!.total).toBe(60)
+  expect(rows[0]!.context).toBe(10) // the last step's prompt, not a sum
 })
 
 test('a main-loop step writes nothing and changes no total', async ($, on) => {
@@ -177,7 +179,7 @@ test('the pane lists every agent, biggest spender first, on every surface', asyn
     const head = await ui.find({ type: 'Text', text: /subagents, / })
     expect(head?.text).toMatch(/^\d+ subagents, \d+k tokens$/)
     const rows = await ui.findAll({ type: 'Text', text: / turns / })
-    expect(rows[0]?.text).toBe('agent  agent-  2 turns  1804k (out 4000)  claude-haiku-5-5')
+    expect(rows[0]?.text).toBe('agent  agent-  2 turns  1804k (out 4000, ctx 900k)  claude-haiku-5-5')
     await ui.unmount()
   }
 })

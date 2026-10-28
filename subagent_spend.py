@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""subagent-spend 0.3.1: attribute Claude Code token usage to each subagent.
+"""subagent-spend 0.4.0: attribute Claude Code token usage to each subagent.
 
   subagent_spend.py hook        SubagentStop hook: reads the hook JSON on stdin, sums the usage
                                 in the subagent transcript, appends one line to the session ledger.
@@ -34,6 +34,8 @@ def sum_transcript(path):
         tot["input"] += u.get("input_tokens", 0) or 0; tot["output"] += u.get("output_tokens", 0) or 0
         tot["cache_read"] += u.get("cache_read_input_tokens", 0) or 0; tot["cache_create"] += u.get("cache_creation_input_tokens", 0) or 0
     tot["total"] = tot["input"] + tot["output"] + tot["cache_read"] + tot["cache_create"]; tot["model"] = model
+    last = list(seen.values())[-1]["usage"] if seen else {}  # the newest step: its prompt is the context the agent ended on
+    tot["context"] = sum(last.get(k, 0) or 0 for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
     return tot
 
 def hook():
@@ -72,10 +74,10 @@ def statusline():
 
 def report(arg):
     files = sorted(ledger_dir().glob("*.jsonl")) if arg in (None, "--all") else [ledger_dir() / f"{arg}.jsonl"]
-    print(f"{'session':12} {'agent_type':18} {'turns':>5} {'input':>9} {'cache_rd':>9} {'cache_cr':>9} {'output':>8} {'total':>9}  ts")
+    print(f"{'session':12} {'agent_type':18} {'turns':>5} {'input':>9} {'cache_rd':>9} {'cache_cr':>9} {'output':>8} {'total':>9} {'context':>8}  ts")
     for f in files:
         for r in rows_for(f.stem):
-            print(f"{r['session_id'][:12]:12} {(r.get('agent_type') or '-')[:18]:18} {r['turns']:>5} {r['input']:>9} {r['cache_read']:>9} {r['cache_create']:>9} {r['output']:>8} {r['total']:>9}  {r['ts']}")
+            print(f"{r['session_id'][:12]:12} {(r.get('agent_type') or '-')[:18]:18} {r['turns']:>5} {r['input']:>9} {r['cache_read']:>9} {r['cache_create']:>9} {r['output']:>8} {r['total']:>9} {r.get('context', '-'):>8}  {r['ts']}")
     return 0
 
 if __name__ == "__main__":

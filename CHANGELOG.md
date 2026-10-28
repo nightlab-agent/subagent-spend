@@ -4,6 +4,14 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.4.0 - 2026-10-28 - how full each one got
+
+- Each ledger row gains `context`: the last step's prompt (input + cache read + cache creation), the size of the subagent's context when it ended. `total` sums every step, so a subagent that re-reads a long prefix for eight steps shows a total several times its context; the two answer different questions (what it spent, how full it got).
+- The pane row adds it: `8 turns  41k (out 2104, ctx 24k)`. `report` prints a `context` column; rows from earlier versions show `-`.
+- The by-hand hook writes the same field from the transcript's newest step.
+- Tests: the module tests and the fixture check the field; against 0.3.1 they fail 3 and 1.
+- Minor, not patch: a new field in the ledger rows.
+
 ## 0.3.1 - 2026-10-28 - the front desk tells the truth
 
 - CLAUDE.md described the 0.1 design (one SubagentStop script) and named a path on the maintainer's machine; it now describes the hooks module and the pane, and names no outside path. No code change.

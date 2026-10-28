@@ -9,6 +9,8 @@ export type Row = {
   cache_create: number
   turns: number
   total: number
+  /** the last step's prompt: input + cache read + cache creation, the subagent's context when it ended */
+  context: number
   model: string
 }
 

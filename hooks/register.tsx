@@ -31,7 +31,7 @@ const PANE = 'subagent-spend'
 const TITLE = 'Subagent spend'
 // What the pane draws; the module's own Map stays the ledger's source. Change
 // the tag when Row's fields change: it declines what an earlier version stored.
-const shown = atom({ plugin: 'subagent-spend', key: 'rows' } as const, [], { shape: 'rows-1' })
+const shown = atom({ plugin: 'subagent-spend', key: 'rows' } as const, [], { shape: 'rows-2' })
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -64,11 +64,11 @@ export const statusText = () => {
   return `subagents ${rows.size} | tok ${fmt(tok)} (out ${fmt(out)})`
 }
 
-/** The pane's lines, biggest spender first: `Explore  a1b2c3  8 turns  41k (out 2104)  claude-opus-5-5`. */
+/** The pane's lines, biggest spender first: `Explore  a1b2c3  8 turns  41k (out 2104, ctx 24k)  claude-opus-5-5`. */
 export const paneLines = (list: Row[]) =>
   [...list]
     .sort((a, b) => b.total - a.total)
-    .map(r => `${r.agent_type || 'agent'}  ${r.agent_id.slice(0, 6)}  ${r.turns} turns  ${fmt(r.total)} (out ${fmt(r.output)})  ${r.model}`)
+    .map(r => `${r.agent_type || 'agent'}  ${r.agent_id.slice(0, 6)}  ${r.turns} turns  ${fmt(r.total)} (out ${fmt(r.output)}, ctx ${fmt(r.context ?? 0)})  ${r.model}`)
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
@@ -134,6 +134,7 @@ export const register: Register = on => {
       cache_create: (prior?.cache_create ?? 0) + u.cache_creation_input_tokens,
       turns: (prior?.turns ?? 0) + 1,
       total: 0,
+      context: u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens,
       model: u.model || prior?.model || e.model,
     }
     row.total = row.input + row.output + row.cache_read + row.cache_create
