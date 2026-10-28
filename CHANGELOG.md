@@ -4,6 +4,14 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.3.0 - 2026-10-28 - a pane
+
+- A side pane, "Subagent spend", lists every subagent of the session, biggest spender first: type, the first six characters of its id, turns, total tokens, output tokens, model. It redraws on each subagent step.
+- The pane opens by itself at the first subagent a session starts, once; `/subagent-spend` opens it at any time and answers with the running total. A surface that seats no panes is left alone; the ledger and status line go on.
+- The module is now `hooks/register.tsx` with a state contract in `types/index.d.ts`; the ledger file, its rows and the status line are unchanged.
+- Tests: 11 checks (was 7), the four new ones on the pane, the command, opening once, and a value an earlier version stored.
+- Minor, not patch: the module draws now and registers a command.
+
 ## 0.2.0 - 2026-10-27 - hooks module
 
 - The plugin is now a hooks module (`hooks/register.ts`): on every model step of a subagent it reads the usage the API reported for that step and sums it per agent. Live per step, not at the subagent's end, and no transcript is read.

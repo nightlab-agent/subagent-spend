@@ -1,7 +1,7 @@
 {
   "name": "subagent-spend",
-  "version": "0.2.0",
-  "description": "See what each Claude Code subagent costs in tokens: a hooks module that sums every subagent step's usage into a local ledger and the status line, plus a report command.",
+  "version": "0.3.0",
+  "description": "See what each Claude Code subagent costs in tokens: a side pane lists every subagent with its tokens, live per step, beside a local ledger, the status line and a report command.",
   "author": {
     "name": "Nightlab"
   },
@@ -11,8 +11,10 @@
   "keywords": [
     "hooks",
     "mod",
+    "pane",
     "statusline",
-    "token-usage",
-    "subagents"
-  ]
+    "subagents",
+    "token-usage"
+  ],
+  "types": "./types/index.d.ts"
 }

@@ -1,4 +1,7 @@
+import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
+
+import type { Row } from '../types'
 
 // subagent-spend, the hooks module: what each subagent costs, as the API counts it.
 //
@@ -7,6 +10,8 @@ import type { Register } from 'claude-code'
 // that answered. This module sums them per agent, writes the session's ledger
 // whole after each step (one JSON row per agent, the same row the command hook
 // and `subagent_spend.py` use), and puts the running total in the status line.
+// It also lists every agent in a side pane, opened at the first subagent of a
+// session or by /subagent-spend.
 //
 // DESIGN NOTE, deliberately narrow: it never denies, never rewrites a request,
 // never reads a transcript, settings or credentials, never touches the network.
@@ -17,23 +22,16 @@ import type { Register } from 'claude-code'
 // Sums live in module variables, so a hot reload starts them over; the row's
 // `ts` says when it was last written.
 
-type Row = {
-  ts: string
-  session_id: string
-  agent_id: string
-  agent_type: string
-  input: number
-  output: number
-  cache_read: number
-  cache_create: number
-  turns: number
-  total: number
-  model: string
-}
-
 const rows = new Map<string, Row>()
 const types = new Map<string, string>()
 let warned = false
+let opened = false
+
+const PANE = 'subagent-spend'
+const TITLE = 'Subagent spend'
+// What the pane draws; the module's own Map stays the ledger's source. Change
+// the tag when Row's fields change: it declines what an earlier version stored.
+const shown = atom({ plugin: 'subagent-spend', key: 'rows' } as const, [], { shape: 'rows-1' })
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -66,10 +64,56 @@ export const statusText = () => {
   return `subagents ${rows.size} | tok ${fmt(tok)} (out ${fmt(out)})`
 }
 
+/** The pane's lines, biggest spender first: `Explore  a1b2c3  8 turns  41k (out 2k)  claude-opus-5-5`. */
+export const paneLines = (list: Row[]) =>
+  [...list]
+    .sort((a, b) => b.total - a.total)
+    .map(r => `${r.agent_type || 'agent'}  ${r.agent_id.slice(0, 6)}  ${r.turns} turns  ${fmt(r.total)} (out ${fmt(r.output)})  ${r.model}`)
+
 export const register: Register = on => {
+  on('session.start', async ($, e, next) => {
+    try {
+      await $.command.register({ name: 'subagent-spend', description: 'Show what each subagent of this session costs, in a pane' })
+    } catch {
+      // a surface with no commands; the pane still opens at the first subagent
+    }
+    return next(e)
+  })
+
+  on('command.run', { command: 'subagent-spend' }, async $ => {
+    await $.ui.open({ id: PANE, title: TITLE })
+    return { text: `Subagent spend pane opened. ${statusText()}` }
+  })
+
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    const { Box, Text } = $.ui.resolve(e)
+    const list = await read($, shown)
+    const room = Math.max(1, (e.viewport?.rows ?? 24) - 4)
+    let tok = 0
+    for (const r of list) tok += r.total
+    return (
+      <Box flexDirection="column">
+        <Text bold>
+          {list.length} subagents, {fmt(tok)} tokens
+        </Text>
+        {list.length === 0 && <Text dimColor>No subagent has run in this session yet.</Text>}
+        {paneLines(list)
+          .slice(0, room)
+          .map(line => (
+            <Text>{line}</Text>
+          ))}
+      </Box>
+    )
+  })
+
   on('agent.spawn', async ($, e, next) => {
     const started = await next(e)
     if (started.agentId) types.set(started.agentId, e.subagentType)
+    if (!opened) {
+      opened = true
+      // a surface that seats no panes refuses; the status line and ledger go on
+      $.ui.open({ id: PANE, title: TITLE }).catch(() => undefined)
+    }
     return started
   }).catch(($, e, next) => next(e)) // an observer: whatever breaks here, the spawn goes on
 
@@ -94,6 +138,11 @@ export const register: Register = on => {
     }
     row.total = row.input + row.output + row.cache_read + row.cache_create
     rows.set(e.agentId, row)
+    try {
+      await update($, shown, () => [...rows.values()])
+    } catch {
+      // the pane misses one redraw; the ledger is the record
+    }
     try {
       $.ui.status(statusText())
     } catch {

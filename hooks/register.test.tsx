@@ -3,8 +3,7 @@ import { expect, mock, test } from 'claude-code/testing'
 // Each test stands for the engine beneath the plugin: it answers `$.fs.write`,
 // `$.ui.status`, `$.env.get`, `$.session.id`, raises subagent steps with a
 // usage of its choosing, and reads what the plugin wrote. Nothing here touches
-// the real file system or a model. Sums are module variables of the plugin and
-// carry across the tests in one run, so each test uses agent ids of its own.
+// the real file system or a model. Each test uses agent ids of its own.
 
 type Written = { path: string; text: string }
 
@@ -113,9 +112,16 @@ test('without SUBAGENT_SPEND_DIR the ledger goes under $HOME/.subagent-spend/', 
 test("the agent type from the spawn is carried into the agent's row", async ($, on) => {
   const { writes } = world(on, { SUBAGENT_SPEND_DIR: '/ledger', HOME: '/home/someone' }, () => usage(5, 5, 0, 0))
   on('agent.spawn', () => ({ model: 'claude-opus-5-5', agentId: 'agent-f' }))
+  const opens: string[] = []
+  on('ui.open', (_, e) => {
+    opens.push(e.id)
+    return { value: { isPlaced: true } }
+  })
 
   await $.agent.spawn({ subagentType: 'Explore', prompt: 'count the files', description: 'reader' })
   await step($, 7, 'agent-f')
+  // The first subagent of the run opens the pane.
+  expect(opens).toEqual(['subagent-spend'])
 
   const row = rowsOf(writes.at(-1)!.text).find(r => r.agent_id === 'agent-f')
   expect(row?.agent_type).toBe('Explore')
@@ -139,4 +145,57 @@ test('a failed write does not fail the step and is named once in the status line
   const r = await step($, 6, 'agent-e')
   expect(r.answer).toBe('fine')
   expect(statuses.some(s => (s ?? '').startsWith('subagent-spend: ledger not written'))).toBe(true)
+})
+
+const PANE = {
+  plugin: 'subagent-spend',
+  component: 'Pane',
+  requestId: 'subagent-spend',
+  props: { title: 'Subagent spend', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
+} as const
+
+test('two spawns in one session open the pane once', async ($, on) => {
+  world(on, { SUBAGENT_SPEND_DIR: '/ledger' }, () => usage(1, 1, 0, 0))
+  let opens = 0
+  on('ui.open', () => {
+    opens += 1
+    return { value: { isPlaced: true } }
+  })
+  on('agent.spawn', () => ({ model: 'claude-opus-5-5', agentId: 'agent-o' }))
+  await $.agent.spawn({ subagentType: 'Explore', prompt: 'a', description: 'a' })
+  await $.agent.spawn({ subagentType: 'Explore', prompt: 'b', description: 'b' })
+  expect(opens).toBe(1)
+})
+
+test('the pane lists every agent, biggest spender first, on every surface', async ($, on) => {
+  world(on, { SUBAGENT_SPEND_DIR: '/ledger' }, () => usage(900000, 2000, 0, 0, 'claude-haiku-5-5'))
+  await step($, 1, 'agent-pane-big')
+  await step($, 2, 'agent-pane-big')
+
+  for (const surface of ['terminal', 'desktop', 'vscode', 'mobile'] as const) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    const head = await ui.find({ type: 'Text', text: /subagents, / })
+    expect(head?.text).toMatch(/^\d+ subagents, \d+k tokens$/)
+    const rows = await ui.findAll({ type: 'Text', text: / turns / })
+    expect(rows[0]?.text).toBe('agent  agent-  2 turns  1804k (out 4000)  claude-haiku-5-5')
+    await ui.unmount()
+  }
+})
+
+test('the command opens the pane and answers with the running total', async ($, on) => {
+  const opens: string[] = []
+  on('ui.open', (_, e) => {
+    opens.push(e.id)
+    return { value: { isPlaced: true } }
+  })
+  const out = await $.command.run({ command: 'subagent-spend', args: '' })
+  expect(opens).toEqual(['subagent-spend'])
+  expect(out.text).toMatch(/^Subagent spend pane opened\. subagents \d+ \| tok /)
+})
+
+test('a value an earlier version stored is declined, and the pane says none ran', async ($, on) => {
+  on('state.get', () => ({ value: { value: [{ agent: 'x' }], version: 1 } }))
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /yet/ }))?.text).toBe('No subagent has run in this session yet.')
+  await ui.unmount()
 })

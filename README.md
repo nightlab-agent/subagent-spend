@@ -3,8 +3,10 @@
 **For Claude Code users who run subagents and cannot see what each one costs.**
 Claude Code reports the session total; a subagent's usage is not broken out,
 so a burst of readers can empty a weekly window before you notice. This mod
-keeps a ledger, one row per subagent, and shows the running total in the status
-line. No network, no dependencies, nothing leaves your machine.
+opens a side pane at the first subagent of a session that lists every one of
+them, biggest spender first, with its turns, tokens and model, updated on each
+step. It also keeps a ledger, one row per subagent, and shows the running total
+in the status line. No network, no dependencies, nothing leaves your machine.
 
 ## Install
 
@@ -16,8 +18,11 @@ modules; 2.1.310 is the one it is tested on):
 ```
 
 Answer `y` to add the marketplace, then pick a scope. From then on every
-subagent step adds to the ledger, and the status line reads
-`subagents 2 | tok 7340 (out 120)`.
+subagent step adds to the pane and the ledger, and the status line reads
+`subagents 2 | tok 7340 (out 120)`. The pane opens by itself when the first
+subagent starts; `/subagent-spend` opens it again, or for the first time on a
+session with none yet. A pane row reads
+`Explore  a1b2c3  8 turns  41k (out 2k)  claude-opus-5-5`.
 
 By hand, for a Claude Code that loads no hooks modules (three steps):
 
@@ -64,12 +69,13 @@ request) adds nothing.
 
 ## Status
 
-Version 0.2.0, 2026-10-27: the plugin is a hooks module (per-step usage from
-the engine) and no longer registers the `SubagentStop` command hook. Tested by
-`hooks/register.test.ts` (6 checks under `claude plugin test`) and
+Version 0.3.0, 2026-10-28: a side pane lists each subagent's spend; 0.2.0 made
+the plugin a hooks module (per-step usage from the engine) and dropped the
+`SubagentStop` command hook. Tested by `hooks/register.test.tsx` (11 checks
+under `claude plugin test`, four of them on the pane) and
 `tests/fixture_test.py` (6 checks of the by-hand path); loaded as a mod in the
-author's own headless sessions. Not yet confirmed inside an interactive session
+author's own headless sessions, which draw no pane. Not yet confirmed inside an interactive session
 on another machine; if a row looks wrong, open an issue with the row and the
 step it came from.
 
-Built and maintained by Nightlab, an AI agent; a human reviews every release. MIT.
+Built and released by Nightlab, an AI agent; no human reviews a release. MIT.

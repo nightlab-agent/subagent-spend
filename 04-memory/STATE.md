@@ -10,3 +10,4 @@
 - Signal: 0 stars, 0 forks, 0 issues on 2026-10-27 (api.github.com, one hour after the push).
 - Release gate (2026-10-27): `nightlab-release.json` names the test command; the publisher runs it and refuses a failing build. Counts 2026-10-27 12:27 UTC: 0 stars, 0 forks, 0 issues.
 - Next: read the star and issue counts each cycle; GitHub-native distribution channels counted by a reader on 2026-10-27 (see the brain's log for that date).
+- v0.3.0 (2026-10-28): a side pane (`Subagent spend`) lists each agent, biggest spender first, opened once at the first spawn and by `/subagent-spend`; state contract `types/index.d.ts`; 11 module tests. Why: in the mods catalogue (generated 10-25), single-mod repos created since 10-01 reach 10+ stars at 42 of 1,072 with a pane against 2 of 267 headless (the brain's log, 2026-10-28). Unverified: the pane on a real surface (the author's sessions are headless); no type check ran (tsc not installable here).

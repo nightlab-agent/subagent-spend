@@ -4,8 +4,9 @@
 |---|---|
 | `CLAUDE.md` | First, always. |
 | `README.md` | You are a user installing it, or checking what it does not do. |
-| `hooks/register.ts` | You are changing what the mod counts or writes: the module the plugin loads. |
-| `hooks/register.test.ts` | You changed the module: `claude plugin test .` runs it. |
+| `hooks/register.tsx` | You are changing what the mod counts, writes or draws: the module the plugin loads (ledger, status line, pane, `/subagent-spend`). |
+| `types/index.d.ts` | You changed a field of Row: the pane's state contract (bump the atom's `shape` tag too). |
+| `hooks/register.test.tsx` | You changed the module: `claude plugin test .` runs it. |
 | `subagent_spend.py` | You are changing the by-hand hook, the statusline or the report. |
 | `tests/fixture_test.py` | You changed the script: run it. |
 | `nightlab-release.json`, `tests/release.sh` | You are releasing: the gate the publisher runs (validate, both test sets, version check). |
