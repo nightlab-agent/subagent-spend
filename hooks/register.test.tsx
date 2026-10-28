@@ -1,7 +1,7 @@
 import { expect, mock, test } from 'claude-code/testing'
 
 // Each test stands for the engine beneath the plugin: it answers `$.fs.write`,
-// `$.ui.status`, `$.env.get`, `$.session.id`, raises subagent steps with a
+// `$.ui.status`, `$.session.id`, raises subagent steps with a
 // usage of its choosing, and reads what the plugin wrote. Nothing here touches
 // the real file system or a model. Each test uses agent ids of its own.
 
@@ -17,10 +17,9 @@ const usage = (i: number, o: number, cr: number, cc: number, model = 'claude-opu
   model,
 })
 
-const world = (on: Parameters<Parameters<typeof test>[1]>[1], env: Record<string, string>, answer: () => Usage | null) => {
+const world = (on: Parameters<Parameters<typeof test>[1]>[1], answer: () => Usage | null) => {
   const writes: Written[] = []
   const statuses: (string | undefined)[] = []
-  mock.env(on, env)
   on('fs.write', (_, e) => {
     writes.push({ path: e.path, text: e.text })
     return { value: undefined }
@@ -47,8 +46,8 @@ const step = async ($: Parameters<Parameters<typeof test>[1]>[0], index: number,
 
 const rowsOf = (text: string) => text.split('\n').filter(Boolean).map(l => JSON.parse(l) as Record<string, unknown>)
 
-test('a subagent step writes one ledger row with the four counts, the turn, the model and the session id, and a status line', async ($, on) => {
-  const { writes, statuses } = world(on, { SUBAGENT_SPEND_DIR: '/ledger', HOME: '/home/someone' }, () => usage(100, 40, 3000, 500))
+test('a subagent step writes one ledger row with the four counts, the turn, the model and the session id, and a status line', { options: { dir: '/ledger' } }, async ($, on) => {
+  const { writes, statuses } = world(on, () => usage(100, 40, 3000, 500))
 
   await step($, 0, 'agent-a')
 
@@ -72,7 +71,7 @@ test('a subagent step writes one ledger row with the four counts, the turn, the 
 })
 
 test('a second step of the same agent updates its row; the file keeps one row per agent', async ($, on) => {
-  const { writes } = world(on, { SUBAGENT_SPEND_DIR: '/ledger', HOME: '/home/someone' }, () => usage(10, 20, 0, 0))
+  const { writes } = world(on, () => usage(10, 20, 0, 0))
 
   await step($, 1, 'agent-b')
   await step($, 2, 'agent-b')
@@ -87,7 +86,7 @@ test('a second step of the same agent updates its row; the file keeps one row pe
 })
 
 test('a main-loop step writes nothing and changes no total', async ($, on) => {
-  const { writes, statuses } = world(on, { SUBAGENT_SPEND_DIR: '/ledger', HOME: '/home/someone' }, () => usage(999, 999, 0, 0))
+  const { writes, statuses } = world(on, () => usage(999, 999, 0, 0))
 
   await step($, 3)
 
@@ -96,23 +95,24 @@ test('a main-loop step writes nothing and changes no total', async ($, on) => {
 })
 
 test('a subagent step whose response carried no usage adds no row', async ($, on) => {
-  const { writes } = world(on, { SUBAGENT_SPEND_DIR: '/ledger', HOME: '/home/someone' }, () => null)
+  const { writes } = world(on, () => null)
 
   await step($, 4, 'agent-c')
 
   expect(writes.length).toBe(0)
 })
 
-test('without SUBAGENT_SPEND_DIR the ledger goes under $HOME/.subagent-spend/', async ($, on) => {
-  const { writes } = world(on, { HOME: '/home/someone' }, () => usage(1, 1, 0, 0))
+test('with no folder set the ledger goes under .subagent-spend/ in the project', async ($, on) => {
+  const { writes } = world(on, () => usage(1, 1, 0, 0))
 
   await step($, 5, 'agent-d')
 
-  expect(writes.at(-1)!.path).toBe('/home/someone/.subagent-spend/sess-test.jsonl')
+  // The engine resolves a relative path against the session's folder.
+  expect(writes.at(-1)!.path).toMatch(/^\/.*\/\.subagent-spend\/sess-test\.jsonl$/)
 })
 
 test("the agent type from the spawn is carried into the agent's row", async ($, on) => {
-  const { writes } = world(on, { SUBAGENT_SPEND_DIR: '/ledger', HOME: '/home/someone' }, () => usage(5, 5, 0, 0))
+  const { writes } = world(on, () => usage(5, 5, 0, 0))
   on('agent.spawn', () => ({ model: 'claude-opus-5-5', agentId: 'agent-f' }))
   const opens: string[] = []
   on('ui.open', (_, e) => {
@@ -131,7 +131,6 @@ test("the agent type from the spawn is carried into the agent's row", async ($, 
 
 test('a failed write does not fail the step and is named once in the status line', async ($, on) => {
   const statuses: (string | undefined)[] = []
-  mock.env(on, { SUBAGENT_SPEND_DIR: '/nowhere' })
   on('fs.write', () => {
     throw new Error('read-only file system')
   })
@@ -157,7 +156,7 @@ const PANE = {
 } as const
 
 test('two spawns in one session open the pane once', async ($, on) => {
-  world(on, { SUBAGENT_SPEND_DIR: '/ledger' }, () => usage(1, 1, 0, 0))
+  world(on, () => usage(1, 1, 0, 0))
   let opens = 0
   on('ui.open', () => {
     opens += 1
@@ -170,7 +169,7 @@ test('two spawns in one session open the pane once', async ($, on) => {
 })
 
 test('the pane lists every agent, biggest spender first, on every surface', async ($, on) => {
-  world(on, { SUBAGENT_SPEND_DIR: '/ledger' }, () => usage(900000, 2000, 0, 0, 'claude-haiku-5-5'))
+  world(on, () => usage(900000, 2000, 0, 0, 'claude-haiku-5-5'))
   await step($, 1, 'agent-pane-big')
   await step($, 2, 'agent-pane-big')
 

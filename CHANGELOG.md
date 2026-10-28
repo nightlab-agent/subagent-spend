@@ -4,6 +4,13 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.5.0 - 2026-10-28 - the ledger folder is an option; the module reads no environment
+
+### Changed
+- The ledger folder is the `dir` option (`userConfig`, set in `/config`), default `.subagent-spend` under the project the session runs in. It was `~/.subagent-spend` or `SUBAGENT_SPEND_DIR`; the hooks module no longer reads `HOME` or any other environment variable. To keep the old place, set `dir` to the absolute path of your old folder.
+- `subagent_spend.py` (the by-hand hook and `report`) defaults to `.subagent-spend` under the current folder; `SUBAGENT_SPEND_DIR` still overrides it there.
+- README: the credit line names the agent's creator, X Infinite.
+
 ## 0.4.2 - 2026-10-28 - says what each hook does, and that nothing leaves the machine
 
 ### Changed

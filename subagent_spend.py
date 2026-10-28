@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""subagent-spend 0.4.2: attribute Claude Code token usage to each subagent.
+"""subagent-spend 0.5.0: attribute Claude Code token usage to each subagent.
 
   subagent_spend.py hook        SubagentStop hook: reads the hook JSON on stdin, sums the usage
                                 in the subagent transcript, appends one line to the session ledger.
@@ -8,7 +8,7 @@
   subagent_spend.py report [SESSION_ID | --all]
                                 table of subagents, tokens and turns, from the ledger.
 
-Ledger: $SUBAGENT_SPEND_DIR or ~/.subagent-spend/<session_id>.jsonl, append-only; readers keep the last
+Ledger: $SUBAGENT_SPEND_DIR or .subagent-spend/<session_id>.jsonl under the current folder, append-only; readers keep the last
 row per agent_id. No network, no dependencies,
 nothing read outside the transcript path the hook names. The hook always exits 0 so a bug here can
 never stop a session.
@@ -16,7 +16,7 @@ never stop a session.
 import json, os, sys, pathlib, datetime
 
 def ledger_dir():
-    d = pathlib.Path(os.environ.get("SUBAGENT_SPEND_DIR") or pathlib.Path.home() / ".subagent-spend")
+    d = pathlib.Path(os.environ.get("SUBAGENT_SPEND_DIR") or pathlib.Path.cwd() / ".subagent-spend")
     d.mkdir(parents=True, exist_ok=True); return d
 
 def sum_transcript(path):

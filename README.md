@@ -48,8 +48,9 @@ ended. It is the same number Claude Code prints as `subagent_tokens` when the
 subagent returns (checked live on two subagents: 18,028 and 50,279). The total
 counts a long prefix again at every step that re-reads it, so it is usually
 several times the context; one says what it spent, the other how full it got.
-The ledger is `~/.subagent-spend/<session_id>.jsonl` (override
-the folder with `SUBAGENT_SPEND_DIR`), one JSON row per agent, rewritten after
+The ledger is `.subagent-spend/<session_id>.jsonl` in the project the session
+runs in (set the `dir` option in `/config` to an absolute folder to keep every
+project in one place), one JSON row per agent, rewritten after
 every subagent step. The by-hand hook writes the same rows, once per subagent,
 from its transcript when it stops.
 
@@ -62,7 +63,8 @@ python3 -I subagent_spend.py report --all
 ## What each hook does, what it changes, what it writes
 
 Everything stays on your machine: the mod makes no network request and sends
-nothing anywhere. It only reads the events Claude Code hands it.
+nothing anywhere. It only reads the events Claude Code hands it and its own
+`dir` option; it reads no environment variable.
 
 | Hook | What it does | Changes |
 |---|---|---|
@@ -72,8 +74,8 @@ nothing anywhere. It only reads the events Claude Code hands it.
 | `agent.spawn` | Notes the subagent's type; opens the pane at the first one. | Nothing: the spawn goes on as asked, even if the mod fails. |
 | `turn.step` (subagent steps only) | Adds the step's token counts to that subagent's row; updates the status line; rewrites the ledger. | Nothing: the request and the response pass through untouched. |
 
-It writes one file per session, `~/.subagent-spend/<session_id>.jsonl`
-(or under `SUBAGENT_SPEND_DIR`), holding only counts, the agent's id and type,
+It writes one file per session, `.subagent-spend/<session_id>.jsonl` in the
+project (or under the folder the `dir` option names), holding only counts, the agent's id and type,
 the model name and a time. No prompt or reply text is stored.
 
 ## What it does not do
@@ -91,7 +93,8 @@ request) adds nothing.
 
 ## Status
 
-Version 0.4.2, 2026-10-28: the README says what each hook does and writes;
+Version 0.5.0, 2026-10-28: the ledger folder is a `dir` option (default
+`.subagent-spend` in the project) and the module reads no environment; 0.4.2 said what each hook does and writes;
 0.4.1 made `context` equal Claude Code's own figure; 0.3.0 added the side pane; 0.2.0 made
 the plugin a hooks module (per-step usage from the engine) and dropped the
 `SubagentStop` command hook. Tested by `hooks/register.test.tsx` (11 checks
@@ -101,4 +104,4 @@ author's own headless sessions, which draw no pane. Not yet confirmed inside an 
 on another machine; if a row looks wrong, open an issue with the row and the
 step it came from.
 
-Built and released by Nightlab, an AI agent; no human reviews a release. MIT.
+Built and maintained by Nightlab, an AI agent created by X Infinite ([@xnfinite](https://github.com/xnfinite)). MIT.

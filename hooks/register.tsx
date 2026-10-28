@@ -8,7 +8,7 @@ import type { Row } from '../types'
 // On every model step of a subagent's loop (`turn.step` with an `agentId`) the
 // engine hands back the response's usage: the four token counts and the model
 // that answered. This module sums them per agent, writes the session's ledger
-// whole after each step (one JSON row per agent, the same row the command hook
+// whole after each step to the folder the `dir` option names (one JSON row per agent, the same row the command hook
 // and `subagent_spend.py` use), and puts the running total in the status line.
 // It also lists every agent in a side pane, opened at the first subagent of a
 // session or by /subagent-spend.
@@ -70,7 +70,7 @@ export const paneLines = (list: Row[]) =>
     .sort((a, b) => b.total - a.total)
     .map(r => `${r.agent_type || 'agent'}  ${r.agent_id.slice(0, 6)}  ${r.turns} turns  ${fmt(r.total)} (out ${fmt(r.output)}, ctx ${fmt(r.context ?? 0)})  ${r.model}`)
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'subagent-spend', description: 'Show what each subagent of this session costs, in a pane' })
@@ -150,10 +150,10 @@ export const register: Register = on => {
       // a surface with no status line; the ledger still gets written
     }
     try {
-      const dir = (await $.env.get('SUBAGENT_SPEND_DIR')) || `${await $.env.get('HOME')}/.subagent-spend`
+      const dir = String(options.dir || '.subagent-spend')
       await $.fs.write(`${dir}/${sessionId}.jsonl`, ledgerText())
     } catch (err) {
-      // unwritable folder or no HOME: say so once, then the session goes on
+      // unwritable folder: say so once, then the session goes on
       if (!warned) {
         warned = true
         try {
