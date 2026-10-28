@@ -4,6 +4,10 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## [Unreleased]
 
+## 0.3.1 - 2026-10-28 - the front desk tells the truth
+
+- CLAUDE.md described the 0.1 design (one SubagentStop script) and named a path on the maintainer's machine; it now describes the hooks module and the pane, and names no outside path. No code change.
+
 ## 0.3.0 - 2026-10-28 - a pane
 
 - A side pane, "Subagent spend", lists every subagent of the session, biggest spender first: type, the first six characters of its id, turns, total tokens, output tokens, model. It redraws on each subagent step.
