@@ -7,6 +7,9 @@ opens a side pane at the first subagent of a session that lists every one of
 them, biggest spender first, with its turns, tokens and model, updated on each
 step. It also keeps a ledger, one row per subagent, and shows the running total
 in the status line. No network, no dependencies, nothing leaves your machine.
+The figure Claude Code reports for a returning subagent is its last step's
+prompt plus reply; in six measured runs the tokens it ran through were 3.6 to
+14.8 times that ([Measured](#measured-what-the-subagent-figure-leaves-out)).
 
 ## Install
 
@@ -38,6 +41,39 @@ By hand, for a Claude Code that loads no hooks modules (three steps):
 Install one of the two, not both: both write the same ledger and every agent
 would be counted twice.
 
+## Measured: what the subagent figure leaves out
+
+When a subagent returns, the Agent tool's result gives the parent a
+`subagent_tokens` figure. In three checks it equalled the last step's prompt
+plus its reply: roughly how full the subagent's context was at the end, not
+how many tokens went through the model. Each step re-sends everything so far,
+so a subagent that takes many steps runs through several times the figure.
+Below is every row in the ledger of the author's own workspace on 2026-10-28:
+four sessions, six general-purpose subagents, all on Claude Opus 5.5.
+
+| Steps | Ledger `context` (= `subagent_tokens`) | Tokens through the model | Of which cache reads | Times the figure |
+|---|---|---|---|---|
+| 4 | 25,590 | 91,130 | 65,258 | 3.6 |
+| 9 | 56,143 | 355,247 | 294,267 | 6.3 |
+| 11 | 57,390 | 435,742 | 377,991 | 7.6 |
+| 18 | 37,001 | 485,754 | 442,278 | 13.1 |
+| 23 | 107,973 | 1,314,130 | 1,185,113 | 12.2 |
+| 25 | 93,251 | 1,384,150 | 1,286,615 | 14.8 |
+
+The printed figure was read beside its row for the first run only (25,590
+both); the earlier two checks (18,028 and 50,279) were on 0.4.0 rows plus the
+last reply, which 0.4.1 added to `context`. Most of each total is cache reads;
+the API prices input, output, cache reads and cache writes differently, so
+this is a token count, not a cost. How each class counts against a
+subscription's usage limits is not published. Six runs on one machine, not a
+benchmark.
+
+Check it on your own subagents (0.4.1 or later): run one, find
+`subagent_tokens` in the result the Agent tool returns, then find the row with
+the same `agent_id` in your ledger folder (`.subagent-spend` in the project
+unless you set `dir`). `context` should equal the figure; `total` is what went
+through. If they differ, open an issue with both numbers.
+
 ## What it counts
 
 For each subagent: model turns and the input, output, cache-read and
@@ -45,7 +81,7 @@ cache-creation tokens the API reported for each of its steps, summed as the
 steps happen, and `context`: the last step's prompt (input, cache read and
 cache creation) plus its reply, how full the subagent's context was when it
 ended. It is the same number Claude Code prints as `subagent_tokens` when the
-subagent returns (checked live on two subagents: 18,028 and 50,279). The total
+subagent returns (checked on three subagents: 18,028, 50,279 and 25,590; see Measured). The total
 counts a long prefix again at every step that re-reads it, so it is usually
 several times the context; one says what it spent, the other how full it got.
 The ledger is `.subagent-spend/<session_id>.jsonl` in the project the session
@@ -93,7 +129,7 @@ request) adds nothing.
 
 ## Status
 
-Version 0.5.1, 2026-10-28: the ledger folder is a `dir` option (default
+Version 0.5.2, 2026-10-28: the README measures what the subagent figure leaves out and the release gate runs the plugin directory checklist; 0.5.1 type-checks in the gate; 0.5.0: the ledger folder is a `dir` option (default
 `.subagent-spend` in the project) and the module reads no environment; 0.4.2 said what each hook does and writes;
 0.4.1 made `context` equal Claude Code's own figure; 0.3.0 added the side pane; 0.2.0 made
 the plugin a hooks module (per-step usage from the engine) and dropped the

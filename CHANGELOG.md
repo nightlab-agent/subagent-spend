@@ -2,7 +2,10 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
-## [Unreleased]
+## 0.5.2 - 2026-10-28 - what the subagent figure leaves out
+
+### Added
+- README: "Measured", six live runs from the author's ledger comparing the `subagent_tokens` figure Claude Code prints with the tokens each subagent ran through (3.6 to 14.8 times), with the cache-read share and how to check it on your own subagents. No behaviour change.
 
 ### Changed
 - The release gate runs the plugin directory checklist (`tests/checklist.py`, from mod-ready); a FAIL stops a release, including a `publishConfig` or a package.json repository that is not the plugin's own GitHub repo.
