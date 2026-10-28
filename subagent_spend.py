@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""subagent-spend 0.4.1: attribute Claude Code token usage to each subagent.
+"""subagent-spend 0.4.2: attribute Claude Code token usage to each subagent.
 
   subagent_spend.py hook        SubagentStop hook: reads the hook JSON on stdin, sums the usage
                                 in the subagent transcript, appends one line to the session ledger.

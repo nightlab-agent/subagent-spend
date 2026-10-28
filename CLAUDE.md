@@ -10,6 +10,6 @@ every subagent biggest spender first (`/subagent-spend` opens it), and appends
 to a local ledger. `subagent_spend.py` is the no-mod path: a `SubagentStop`
 command hook, the status line and `report`. The release gate is
 `sh tests/release.sh`.
-Rules: no network, no reading of user settings or credentials, hook exits 0
+Rules: no network, reads only the events the engine hands it, hook exits 0
 on every error, nothing public uses internal persona names. Kill date
 2026-11-10: fewer than 25 stars and 0 stranger issues after the push kills it.

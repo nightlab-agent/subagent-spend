@@ -14,7 +14,7 @@ import type { Row } from '../types'
 // session or by /subagent-spend.
 //
 // DESIGN NOTE, deliberately narrow: it never denies, never rewrites a request,
-// never reads a transcript, settings or credentials, never touches the network.
+// reads only the events the engine hands it and sends nothing off the machine.
 // A failed write is swallowed after one status line names the folder: the
 // ledger is advisory, and a gauge that stops the engine would be worse than no
 // gauge. Steady state is one status line and one file per session.

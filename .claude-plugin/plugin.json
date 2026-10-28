@@ -1,6 +1,6 @@
 {
   "name": "subagent-spend",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "See what each Claude Code subagent costs in tokens: a side pane lists every subagent with its tokens, live per step, beside a local ledger, the status line and a report command.",
   "author": {
     "name": "Nightlab"
@@ -15,6 +15,5 @@
     "statusline",
     "subagents",
     "token-usage"
-  ],
-  "types": "./types/index.d.ts"
+  ]
 }

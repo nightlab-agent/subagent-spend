@@ -59,11 +59,27 @@ The table, for one session or all of them:
 python3 -I subagent_spend.py report --all
 ```
 
+## What each hook does, what it changes, what it writes
+
+Everything stays on your machine: the mod makes no network request and sends
+nothing anywhere. It only reads the events Claude Code hands it.
+
+| Hook | What it does | Changes |
+|---|---|---|
+| `session.start` | Registers the `/subagent-spend` command. | Nothing. |
+| `command.run` (`/subagent-spend`) | Opens the side pane. | Nothing. |
+| `ui.render` (its own pane) | Draws one row per subagent from the sums in memory. | Nothing. |
+| `agent.spawn` | Notes the subagent's type; opens the pane at the first one. | Nothing: the spawn goes on as asked, even if the mod fails. |
+| `turn.step` (subagent steps only) | Adds the step's token counts to that subagent's row; updates the status line; rewrites the ledger. | Nothing: the request and the response pass through untouched. |
+
+It writes one file per session, `~/.subagent-spend/<session_id>.jsonl`
+(or under `SUBAGENT_SPEND_DIR`), holding only counts, the agent's id and type,
+the model name and a time. No prompt or reply text is stored.
+
 ## What it does not do
 
 No dollars (plans have no price per token; use the counts). No cloud or remote
-sessions. No reading of your settings, credentials or transcripts (the module
-takes the usage the engine hands it). It never denies or rewrites a request.
+sessions. The module takes only the usage the engine hands it. It never denies or rewrites a request.
 
 ## Known limits
 
@@ -75,7 +91,8 @@ request) adds nothing.
 
 ## Status
 
-Version 0.3.0, 2026-10-28: a side pane lists each subagent's spend; 0.2.0 made
+Version 0.4.2, 2026-10-28: the README says what each hook does and writes;
+0.4.1 made `context` equal Claude Code's own figure; 0.3.0 added the side pane; 0.2.0 made
 the plugin a hooks module (per-step usage from the engine) and dropped the
 `SubagentStop` command hook. Tested by `hooks/register.test.tsx` (11 checks
 under `claude plugin test`, four of them on the pane) and
