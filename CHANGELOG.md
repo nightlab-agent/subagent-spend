@@ -5,7 +5,8 @@ The form is Keep a Changelog; versions follow SemVer.
 ## [Unreleased]
 
 ### Changed
-- The release gate runs the plugin directory checklist (`tests/checklist.py`, from mod-ready); a FAIL stops a release.
+- The release gate runs the plugin directory checklist (`tests/checklist.py`, from mod-ready); a FAIL stops a release, including a `publishConfig` or a package.json repository that is not the plugin's own GitHub repo.
+- `tests/typecheck.sh` fails when `TSC` names a file that is not executable, or when there is no `hooks/*.ts(x)` to check (both passed silently before).
 
 ## 0.5.1 - 2026-10-28 - the gate type-checks
 
