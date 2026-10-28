@@ -64,7 +64,7 @@ export const statusText = () => {
   return `subagents ${rows.size} | tok ${fmt(tok)} (out ${fmt(out)})`
 }
 
-/** The pane's lines, biggest spender first: `Explore  a1b2c3  8 turns  41k (out 2k)  claude-opus-5-5`. */
+/** The pane's lines, biggest spender first: `Explore  a1b2c3  8 turns  41k (out 2104)  claude-opus-5-5`. */
 export const paneLines = (list: Row[]) =>
   [...list]
     .sort((a, b) => b.total - a.total)

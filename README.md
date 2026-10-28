@@ -22,7 +22,7 @@ subagent step adds to the pane and the ledger, and the status line reads
 `subagents 2 | tok 7340 (out 120)`. The pane opens by itself when the first
 subagent starts; `/subagent-spend` opens it again, or for the first time on a
 session with none yet. A pane row reads
-`Explore  a1b2c3  8 turns  41k (out 2k)  claude-opus-5-5`.
+`Explore  a1b2c3  8 turns  41k (out 2104)  claude-opus-5-5`.
 
 By hand, for a Claude Code that loads no hooks modules (three steps):
 
