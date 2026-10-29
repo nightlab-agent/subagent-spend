@@ -1,10 +1,12 @@
 #!/bin/sh
-# Release gate: the manifest and module validate, the plugin directory
-# checklist (tests/checklist.py, from mod-ready) has no FAIL, both test sets pass, and the
+# Release check: the manifest and module validate, the plugin directory
+# checklist (tests/checklist.py, from mod-ready) has no FAIL, the module tests (hooks/*.test.ts*) and the
+# by-hand script's fixture test pass, the fixture fails on each planted bug, and the
 # version string is the same in the plugin manifest, the marketplace manifest,
 # the script's first line and the changelog's newest release.
 # Exit non-zero on any of them. Run from the repo root: sh tests/release.sh
-# Type-check: tests/typecheck.sh, tsc --noEmit against the engine's declarations.
+# Type-check: tests/typecheck.sh, tsc --noEmit against Claude Code's declarations. It needs
+# TypeScript and those declarations; see its header for where it finds them and what to install.
 set -e
 cd "$(dirname "$0")/.."
 claude plugin validate .
@@ -12,6 +14,8 @@ claude plugin test .
 sh tests/typecheck.sh
 python3 -I tests/checklist.py
 python3 -I tests/fixture_test.py
+python3 -I tests/planted_bug_test.py
+python3 -I tests/script_dir_test.py
 python3 -I - <<'EOF'
 import json, re, sys
 plugin = json.load(open('.claude-plugin/plugin.json'))['version']
@@ -23,4 +27,4 @@ if len(set(versions.values())) != 1:
     sys.exit(f"version strings differ: {versions}")
 print(f"version check: all four say {plugin}")
 EOF
-echo "release gate: validate, module tests, fixture test and version check passed"
+echo "release check passed: validate, module tests, type check, checklist, fixture test and version check"

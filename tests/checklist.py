@@ -11,14 +11,16 @@ hold named it, on the three mods Nightlab submitted to the directory in October 
 import json, pathlib, re, sys
 
 ROOT = pathlib.Path('.')
-# Manifest fields the directory accepted on those seven mods, plus the documented
+# Manifest fields the directory accepted on those mods, plus the documented
 # component paths. Any other field drew an "unknown field" warning (it was `types`).
 KNOWN = {'name', 'version', 'description', 'author', 'homepage', 'repository', 'license',
          'keywords', 'userConfig', 'commands', 'agents', 'skills', 'hooks', 'mcpServers',
          'outputStyles', 'lspServers'}
-# Reads of the environment looked like credential reads to the safety scan.
+# A module that read an environment variable (HOME) was held. Why is a guess, not tested:
+# the scan may take any environment read for a credential read.
 ENV_READ = re.compile(r'\$\.env\b|process\.env|Deno\.env|Bun\.env|import\.meta\.env')
-# Comments naming these words were read as the mod touching them, even in a "never".
+# A held module had a comment saying it never reads credentials. That the word itself
+# caused the hold is a guess, not tested; dropping such words costs nothing.
 SCARY_WORD = re.compile(r'\b(credential|password|secret|api[ _-]?key|transcript)s?\b', re.I)
 INSTALL_SCRIPTS = {'preinstall', 'install', 'postinstall', 'preuninstall', 'uninstall', 'postuninstall', 'prepare'}
 
@@ -79,7 +81,7 @@ if pkg_path.is_file():
     check(not missing, 'every package.json files entry exists', ', '.join(missing))
     check(not pkg.get('private'), 'package.json is not private')
     check('publishConfig' not in pkg, 'package.json has no publishConfig',
-          'a release service may refuse it (it can redirect where a package goes); pass --access public on the first release instead')
+          'it can send the package to another registry or access level; pass --access public on the first release instead')
 check(not (ROOT / '.npmrc').exists(), 'no .npmrc in the repo')
 
 width = max(len(r[1]) for r in results)

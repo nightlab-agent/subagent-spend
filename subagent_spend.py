@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
-"""subagent-spend 0.6.0: attribute Claude Code token usage to each subagent.
+"""subagent-spend 0.7.0: attribute Claude Code token usage to each subagent.
 
   subagent_spend.py hook        SubagentStop hook: reads the hook JSON on stdin, sums the usage
-                                in the subagent transcript, appends one line to the session ledger.
+                                in the subagent transcript, appends one line to the session's rows file.
   subagent_spend.py statusline  statusline command: reads the statusline JSON on stdin, prints
                                 "<model> | subagents N | tok T (out O)".
   subagent_spend.py report [SESSION_ID | --all]
-                                table of subagents, tokens and turns, from the ledger.
+                                table of subagents, tokens and turns, from the rows file.
 
-Ledger: $SUBAGENT_SPEND_DIR or .subagent-spend/<session_id>.jsonl under the current folder, append-only; readers keep the last
+Rows file: $SUBAGENT_SPEND_DIR or .subagent-spend/<session_id>.jsonl under the current folder, append-only; readers keep the last
 row per agent_id. No network, no dependencies,
 nothing read outside the transcript path the hook names. The hook always exits 0 so a bug here can
 never stop a session.
 """
 import json, os, sys, pathlib, datetime
 
-def ledger_dir():
+def rows_dir():
     d = pathlib.Path(os.environ.get("SUBAGENT_SPEND_DIR") or pathlib.Path.cwd() / ".subagent-spend")
     d.mkdir(parents=True, exist_ok=True)
     ig = d / ".gitignore"  # git ignores the folder in every project, with no step from the user
-    if not ig.exists(): ig.write_text("*\n")
+    # only in a folder of the mod's own name: any other may be the project itself or hold the user's files
+    if d.resolve().name == ".subagent-spend" and not ig.exists(): ig.write_text("*\n")
     return d
 
 def sum_transcript(path):
@@ -49,13 +50,13 @@ def hook():
         t = sum_transcript(path)
         row = {"ts": datetime.datetime.now().astimezone().isoformat(timespec="seconds"), "session_id": h.get("session_id", "unknown"),
                "agent_id": h.get("agent_id"), "agent_type": h.get("agent_type") or h.get("subagent_type") or "", **t}
-        with open(ledger_dir() / f"{row['session_id']}.jsonl", "a", encoding="utf-8") as f: f.write(json.dumps(row) + "\n")
+        with open(rows_dir() / f"{row['session_id']}.jsonl", "a", encoding="utf-8") as f: f.write(json.dumps(row) + "\n")
     except Exception as e:  # never block the session
         sys.stderr.write(f"subagent-spend: {e}\n")
     return 0
 
 def rows_for(session_id):
-    p = ledger_dir() / f"{session_id}.jsonl"
+    p = rows_dir() / f"{session_id}.jsonl"
     if not p.exists(): return []
     byid = {}  # one row per agent_id, the last write wins (a second SubagentStop for the same agent repeats it)
     for n, l in enumerate(p.read_text(encoding="utf-8").splitlines()):
@@ -76,13 +77,20 @@ def statusline():
     return 0
 
 def report(arg):
-    files = sorted(ledger_dir().glob("*.jsonl")) if arg in (None, "--all") else [ledger_dir() / f"{arg}.jsonl"]
+    files = sorted(rows_dir().glob("*.jsonl")) if arg in (None, "--all") else [rows_dir() / f"{arg}.jsonl"]
     print(f"{'session':12} {'agent_type':18} {'turns':>5} {'input':>9} {'cache_rd':>9} {'cache_cr':>9} {'output':>8} {'total':>9} {'context':>8}  ts")
     for f in files:
         for r in rows_for(f.stem):
             print(f"{r['session_id'][:12]:12} {(r.get('agent_type') or '-')[:18]:18} {r['turns']:>5} {r['input']:>9} {r['cache_read']:>9} {r['cache_create']:>9} {r['output']:>8} {r['total']:>9} {r.get('context', '-'):>8}  {r['ts']}")
     return 0
 
+def usage(): return __doc__.split("\n\n")[1]
+
 if __name__ == "__main__":
-    cmd = sys.argv[1] if len(sys.argv) > 1 else "hook"
-    sys.exit({"hook": hook, "statusline": statusline}.get(cmd, lambda: report(sys.argv[2] if len(sys.argv) > 2 else None))())
+    a = sys.argv[1:]
+    if a and a[0] in ("-h", "--help", "help"): print(__doc__.strip()); sys.exit(0)
+    if not a and sys.stdin.isatty(): print(usage(), file=sys.stderr); sys.exit(2)  # a person typed it bare: the hook would wait on stdin
+    cmd = a[0] if a else "hook"
+    if cmd == "report" and len(a) <= 2: sys.exit(report(a[1] if len(a) > 1 else None))
+    if cmd in ("hook", "statusline") and len(a) <= 1: sys.exit({"hook": hook, "statusline": statusline}[cmd]())
+    print(f"subagent-spend: unknown command {' '.join(a)!r}. Use one of:\n{usage()}", file=sys.stderr); sys.exit(2)

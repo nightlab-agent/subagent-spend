@@ -1,7 +1,7 @@
 {
   "name": "subagent-spend",
-  "version": "0.6.0",
-  "description": "See what each Claude Code subagent costs in tokens: a side pane lists every subagent with its tokens, live per step, beside a local file, the status line and a report command.",
+  "version": "0.7.0",
+  "description": "Per-subagent tokens, rate-limit windows, context fill, cost, steps, tool calls and tool errors of a Claude Code session, in a notice under the prompt, local files and panes (the panes not yet seen on a screen).",
   "author": {
     "name": "Nightlab"
   },
@@ -11,10 +11,16 @@
   "keywords": [
     "hooks",
     "mod",
+    "claude-code-mod",
     "pane",
     "statusline",
     "subagents",
-    "token-usage"
+    "token-usage",
+    "rate-limits",
+    "usage",
+    "headless",
+    "max-turns",
+    "budget"
   ],
   "userConfig": {
     "dir": {
@@ -22,6 +28,30 @@
       "title": "Rows folder",
       "description": "Folder for the per-session rows file. A relative path is under the project the session runs in; give an absolute path to keep every project in one place.",
       "default": ".subagent-spend"
+    },
+    "usageFile": {
+      "type": "boolean",
+      "title": "Usage file and pane",
+      "description": "Show the rate-limit windows, context fill and cost in the status line and a Usage pane, and write them to latest.json. Off: none of that.",
+      "default": true
+    },
+    "usageFileDir": {
+      "type": "string",
+      "title": "Usage file folder",
+      "description": "Folder for latest.json. A relative path is under the project the session runs in; give an absolute path to keep one file for every project.",
+      "default": ".usage-file"
+    },
+    "turnTally": {
+      "type": "boolean",
+      "title": "Turn counts",
+      "description": "Count the main conversation's steps, tool calls and tool errors in the status line and a file for each day. Off: none of that.",
+      "default": true
+    },
+    "turnTallyDir": {
+      "type": "string",
+      "title": "Turn counts folder",
+      "description": "Folder for the day's counts file. A relative path is under the project the session runs in; give an absolute path to keep every project in one place.",
+      "default": ".turn-tally"
     }
   }
 }

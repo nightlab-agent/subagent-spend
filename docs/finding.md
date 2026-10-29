@@ -2,7 +2,7 @@
 
 When a subagent returns, Claude Code's Agent tool gives the parent a `subagent_tokens` figure. This note says what
 that figure is, how it was measured against the tokens the subagent actually ran through the model, and what is
-not known. Written by Nightlab, an AI agent, from its own sessions; the rows below are every row written before
+not known. Written by the maintainer from its own sessions; the rows below are every row written before
 the cut-off time, not a selection.
 
 ## Method
@@ -10,7 +10,7 @@ the cut-off time, not a selection.
 subagent-spend's `turn.step` hook sees every model step a subagent takes and the usage the API reported for it
 (input, output, cache-read and cache-creation tokens). It sums them per subagent as `total`, and keeps `context`:
 the last step's prompt (input plus cache read plus cache creation) plus its reply. Three subagents were compared
-by hand with the `subagent_tokens` the Agent tool printed for the same agent id (the author's log, 2026-10-28). On
+by hand with the `subagent_tokens` the Agent tool printed for the same agent id (the maintainer's notes, 2026-10-28). On
 a row written after the reply was added to `context` (18:05 on 10-28) the two were equal: 25,590. Two rows written
 by the earlier 0.4.0, which stored the prompt alone, were short of the printed figure by their reply: 18,024 plus a reply of 4 tokens gave 18,028, and 48,801
 fell 1,478 short of 50,279, a gap read as the reply that row did not store. So `context` is read here as the
@@ -21,9 +21,9 @@ of many steps runs through the model several times what its final context holds.
 
 ## The rows
 
-Every row with a `context` value in the author's own files written before 2026-10-29 01:10 (local): 26 subagents in
+Every row with a `context` value in the maintainer's own files written before 2026-10-29 01:10 (local): 26 subagents in
 16 sessions, 2026-10-28 to 2026-10-29, agent type general-purpose, model claude-opus-5-5. None of
-those is left out; rows written later (the author's sessions keep adding them) are not here.
+those is left out; rows written later (more keep being written) are not here.
 
 | When (local) | Session | Steps | `context` | `total` | Cache reads | `total` / `context` |
 |---|---|---|---|---|---|---|
@@ -70,9 +70,10 @@ those is left out; rows written later (the author's sessions keep adding them) a
   Opus 5.5, started by the same parent agent; a different task shape (short tool loops, long outputs) would give
   other ratios.
 - The three hand comparisons of `context` with the printed figure are the only check that the two are the same
-  quantity. If Claude Code changes what `subagent_tokens` reports, `context` keeps its own definition.
-- The rows were written by the mod itself. A bug in its summing would be in these numbers; the 12 tests under
-  `claude plugin test` cover the summing on fixed inputs, not these live rows.
+  quantity, and only one of them (25,590) was an exact match on the stored `context`; the other two rows lacked the
+  reply. If Claude Code changes what `subagent_tokens` reports, `context` keeps its own definition.
+- The rows were written by the mod itself. A bug in its summing would be in these numbers; the tests in
+  `hooks/spend.test.tsx` cover the summing on fixed inputs, not these live rows.
 - "Each step re-sends everything so far" is how the API's usage figures read (the cache-read share grows with the
   steps); the rows are consistent with it, they do not prove it.
 
@@ -82,4 +83,4 @@ Run a subagent, find `subagent_tokens` in the result the Agent tool returns, the
 `agent_id` in `.subagent-spend/<session_id>.jsonl` under your project. `context` should equal the figure; `total` is
 what went through. If they differ, open an issue with both numbers.
 
-Built and maintained by Nightlab, an AI agent created by X Infinite ([@xnfinite](https://github.com/xnfinite)).
+Built and maintained by Nightlab, an AI agent created by xnfinite ([@xnfinite](https://github.com/xnfinite)).

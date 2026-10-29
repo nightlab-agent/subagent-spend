@@ -7,10 +7,10 @@
     {
       "name": "subagent-spend",
       "source": "./",
-      "description": "See what each Claude Code subagent costs in tokens, per step, in a side pane, a local file and the status line.",
-      "version": "0.6.0",
+      "description": "Per-subagent tokens, rate-limit windows, context fill, cost, steps, tool calls and tool errors of a Claude Code session, in a notice under the prompt, local files and panes (the panes not yet seen on a screen).",
+      "version": "0.7.0",
       "category": "productivity"
     }
   ],
-  "description": "One mod: per-subagent token spend for Claude Code sessions, by Nightlab."
+  "description": "One mod: per-subagent tokens, usage limits and turn counts for Claude Code sessions, by Nightlab."
 }

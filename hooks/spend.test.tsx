@@ -52,13 +52,13 @@ const step = async ($: Parameters<TestBody>[0], index: number, agentId?: string)
 
 const rowsOf = (text: string) => text.split('\n').filter(Boolean).map(l => JSON.parse(l) as Record<string, unknown>)
 
-test('a subagent step writes one ledger row with the four counts, the turn, the model and the session id, and a status line', { options: { dir: '/ledger' } }, async ($, on) => {
+test('a subagent step writes one row with the four counts, the turn, the model and the session id, and a status line', { options: { dir: '/rows/.subagent-spend' } }, async ($, on) => {
   const { writes, statuses } = world(on, () => usage(100, 40, 3000, 500))
 
   await step($, 0, 'agent-a')
 
   expect(writes.length).toBe(2)
-  expect(writes[1]!.path).toBe('/ledger/sess-test.jsonl')
+  expect(writes[1]!.path).toBe('/rows/.subagent-spend/sess-test.jsonl')
   const rows = rowsOf(writes[1]!.text)
   expect(rows.length).toBe(1)
   const r = rows[0]!
@@ -91,13 +91,14 @@ test('a second step of the same agent updates its row; the file keeps one row pe
   expect(rows[0]!.context).toBe(30) // the last step's prompt and reply, not a sum
 })
 
-test('a main-loop step writes nothing and changes no total', async ($, on) => {
+test('a main-loop step writes no subagent row and changes no total', async ($, on) => {
   const { writes, statuses } = world(on, () => usage(999, 999, 0, 0))
 
   await step($, 3)
 
-  expect(writes.length).toBe(0)
-  expect(statuses.length).toBe(0)
+  // the main step is the turn counts' to write (turns.test.ts); the subagent rows stay untouched
+  expect(writes.filter(w => w.path.includes('/.subagent-spend/')).length).toBe(0)
+  expect(statuses.filter(s => (s ?? '').includes('subagents')).length).toBe(0)
 })
 
 test('a subagent step whose response carried no usage adds no row', async ($, on) => {
@@ -108,7 +109,7 @@ test('a subagent step whose response carried no usage adds no row', async ($, on
   expect(writes.length).toBe(0)
 })
 
-test('with no folder set the ledger goes under .subagent-spend/ in the project', async ($, on) => {
+test('with no folder set the rows file goes under .subagent-spend/ in the project', async ($, on) => {
   const { writes } = world(on, () => usage(1, 1, 0, 0))
 
   await step($, 5, 'agent-d')
@@ -151,7 +152,7 @@ test('a failed write does not fail the step and is named once in the status line
 
   const r = await step($, 6, 'agent-e')
   expect(r.answer).toBe('fine')
-  expect(statuses.some(s => (s ?? '').startsWith('subagent-spend: ledger not written'))).toBe(true)
+  expect(statuses.some(s => (s ?? '').startsWith('subagent-spend: rows file not written'))).toBe(true)
 })
 
 const PANE = {
@@ -205,6 +206,13 @@ test('a value an earlier version stored is declined, and the pane says none ran'
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: /yet/ }))?.text).toBe('No subagent has run in this session yet.')
   await ui.unmount()
+})
+
+test('with dir set to the project itself, the project\'s own .gitignore is left alone', { options: { dir: '.' } }, async ($, on) => {
+  const { writes } = world(on, () => usage(1, 1, 0, 0))
+  await step($, 0, 'agent-a')
+  expect(writes.filter(w => w.path.endsWith('.gitignore') && !w.path.includes('/.usage-file/') && !w.path.includes('/.turn-tally/')).length).toBe(0)
+  expect(writes.filter(w => w.path.endsWith('.jsonl')).length).toBe(1)
 })
 
 test('before its first write the mod writes <dir>/.gitignore holding one line, *, once, so git never sees the folder', async ($, on) => {

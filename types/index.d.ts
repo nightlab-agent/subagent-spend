@@ -14,8 +14,16 @@ export type Row = {
   model: string
 }
 
+/** What the usage pane draws: the newest measurement of the session (was usage-file's `latest`). */
+export type Shown = {
+  at: string
+  windows: { kind: string; percentUsed: number; resetsAt: string | null }[]
+  context: number | null
+  usd: number | null
+}
+
 declare module 'claude-code' {
   interface PluginState {
-    'subagent-spend': { rows: Shaped<Row[]> }
+    'subagent-spend': { rows: Shaped<Row[]>; latest: Shaped<Shown | null> }
   }
 }

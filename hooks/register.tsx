@@ -1,95 +1,172 @@
 import { atom, read, update } from 'claude-code'
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
-import type { Row } from '../types'
+import type { Row, Shown } from '../types'
+import { addStep, fmt, rowsText, paneLines, rows, spendStatus, types } from './spend'
+import { countCall, localDay, tally, tallyText, turnsStatus } from './turns'
+import { OPEN_AT, bar, fileText, shownOf, shownStatus, usageLines, usageStatus } from './usage'
 
-// subagent-spend, the hooks module: what each subagent costs, as the API counts it.
+// subagent-spend, the hooks module: a session's meters in one mod.
 //
-// On every model step of a subagent's loop (`turn.step` with an `agentId`) the
-// engine hands back the response's usage: the four token counts and the model
-// that answered. This module sums them per agent, writes the session's ledger
-// whole after each step to the folder the `dir` option names (one JSON row per agent, the same row the command hook
-// and `subagent_spend.py` use), and puts the running total in the status line.
-// It also lists every agent in a side pane, opened at the first subagent of a
-// session or by /subagent-spend.
+// Three parts, each with its own file folder:
+// - spend (always on): on every model step of a subagent's loop (`turn.step` with an
+//   `agentId`) the engine hands back the response's usage; it is summed per agent, the
+//   session's rows file is rewritten whole under the `dir` option, and a side pane lists
+//   every agent, opened at the first subagent of a session or by /subagent-spend.
+// - usage (option `usageFile`, was the usage-file mod): on `session.measure` the rate-limit
+//   windows, context fill and cost go to `<usageFileDir>/latest.json` and a second pane,
+//   opened by /usage-file or once when a window reaches OPEN_AT percent.
+// - turns (option `turnTally`, was the turn-tally mod): on each main-loop step the steps,
+//   tool calls, tool errors and error streak go to `<turnTallyDir>/<day>.txt`.
+// A part whose option is off passes its events to `next` and returns the result untouched.
 //
-// DESIGN NOTE, deliberately narrow: it never denies, never rewrites a request,
-// reads only the events the engine hands it and sends nothing off the machine.
-// A failed write is swallowed after one status line names the folder: the
-// ledger is advisory, and a gauge that stops the engine would be worse than no
-// gauge. Steady state is one status line and one file per session.
+// One status line: three mods each setting the whole line would overwrite each other, so
+// each part keeps its own piece and the line shows the pieces that have a reading, in the
+// order spend | usage | turns.
 //
-// Sums live in module variables, so a hot reload starts them over; the row's
-// `ts` says when it was last written.
+// DESIGN NOTE, deliberately narrow: it never denies, never rewrites a request or an event,
+// reads only the events the engine hands it and sends nothing off the machine. A failed
+// write is swallowed (the spend part names it once in the status line): the files are
+// advisory, and a gauge that stops the engine would be worse than no gauge.
 
-const rows = new Map<string, Row>()
-const types = new Map<string, string>()
-let warned = false
-let opened = false
+const SPEND_PANE = 'subagent-spend'
+const SPEND_TITLE = 'Subagent spend'
+const USAGE_PANE = 'usage-file'
+const USAGE_TITLE = 'Usage'
 
-const PANE = 'subagent-spend'
-const TITLE = 'Subagent spend'
-// What the pane draws; the module's own Map stays the ledger's source. Change
-// the tag when Row's fields change: it declines what an earlier version stored.
-const shown = atom({ plugin: 'subagent-spend', key: 'rows' } as const, [], { shape: 'rows-2' })
+// What the panes draw; the module's own Map stays the rows file's source. Change a tag
+// when its type's fields change: it declines what an earlier version stored.
+const shownRows = atom({ plugin: 'subagent-spend', key: 'rows' } as const, [] as Row[], { shape: 'rows-2' })
+const shownUsage = atom({ plugin: 'subagent-spend', key: 'latest' } as const, null as Shown | null, { shape: 'latest-1' })
 
-const pad = (n: number) => String(n).padStart(2, '0')
+let spendOpened = false
+let usageOpened = false
+// The session the sums belong to. A /clear goes on under a new session id with no new session.start;
+// session.end fires for it (declarations, SessionEndInput.reason), and there the sums and the panes'
+// opening start over. The first event that sees another id does the same, for a host that sends no end.
+let rowsSession: string | null = null
+// Asks for the id are numbered. An answer asked before the latest switch that names the session just left
+// came back late (asks wait at once); it never switches back. A later ask may name it again (a resume).
+let asks = 0
+let switchedAt = 0
+let leftSession: string | null = null
 
-/** Local time with offset, the shape the command hook writes (`2026-10-27T16:40:02-04:00`). */
-export const localIso = (d: Date) => {
-  const off = -d.getTimezoneOffset()
-  const sign = off >= 0 ? '+' : '-'
-  const abs = Math.abs(off)
-  return (
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` +
-    `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
-  )
+function startOver(left: string | null) {
+  leftSession = left
+  switchedAt = asks
+  rowsSession = null
+  rows.clear()
+  spendOpened = false
+  usageOpened = false
 }
 
-const fmt = (n: number) => (n >= 10000 ? `${Math.round(n / 1000)}k` : String(n))
-
-/** The ledger's whole text: one row per agent, one JSON object per line. */
-export const ledgerText = () =>
-  [...rows.values()].map(r => JSON.stringify(r)).join('\n') + (rows.size ? '\n' : '')
-
-/** The status line: `subagents 2 | tok 7340 (out 120)`. */
-export const statusText = () => {
-  let tok = 0
-  let out = 0
-  for (const r of rows.values()) {
-    tok += r.total
-    out += r.output
+/** This session's id ('' on a host with none), or null for a late answer naming the session just left. */
+async function sessionNow($: EngineInterface) {
+  const mine = ++asks
+  let id = ''
+  try {
+    id = await $.session.id()
+  } catch {
+    // no session id on this host
   }
-  return `subagents ${rows.size} | tok ${fmt(tok)} (out ${fmt(out)})`
+  if (mine <= switchedAt && id === leftSession) return null
+  if (rowsSession !== null && id !== rowsSession) startOver(rowsSession)
+  rowsSession = id
+  return id
 }
 
-/** The pane's lines, biggest spender first: `Explore  a1b2c3  8 turns  41k (out 2104, ctx 24k)  claude-opus-5-5`. */
-export const paneLines = (list: Row[]) =>
-  [...list]
-    .sort((a, b) => b.total - a.total)
-    .map(r => `${r.agent_type || 'agent'}  ${r.agent_id.slice(0, 6)}  ${r.turns} turns  ${fmt(r.total)} (out ${fmt(r.output)}, ctx ${fmt(r.context ?? 0)})  ${r.model}`)
+/** One file of one part in this session: whether a write is in flight, whether one is owed, whether
+ * `<dir>/.gitignore` is left alone (a folder not of the mod's own name) or was written, and the newest content to write. */
+type Out = { writing: boolean; owed: boolean; ignore: boolean; ignored: boolean; newest: { name: string; text: () => string } | null }
+const out = (own: boolean): Out => ({ writing: false, owed: false, ignore: !own, ignored: false, newest: null })
+
+/** One write at a time per file, always from the newest content. Two events can wait at once (on
+ * `$.session.id()` or on a write); if the earlier one's write landed last, its older figures would sit on
+ * top of the newer ones. An event that finds a write in flight marks the file as owed and goes on; the
+ * writing one writes again, from the newest content, until nothing is owed. A failed write is made up
+ * by the next event. Before each write, when it is missing: `<dir>/.gitignore` holding `*`, so git
+ * ignores the folder in every project with no step from the user. */
+async function writeLatest($: EngineInterface, dir: string, f: Out) {
+  if (f.writing) {
+    f.owed = true
+    return
+  }
+  f.writing = true
+  try {
+    do {
+      f.owed = false
+      if (!f.ignore) {
+        // checked before every write, not once: a user who deletes the folder mid-session gets it back ignored
+        let has = f.ignored
+        try {
+          has = await $.fs.exists(`${dir}/.gitignore`)
+        } catch {
+          // a host that cannot answer: once per session, as before
+        }
+        if (!has) await $.fs.write(`${dir}/.gitignore`, '*\n')
+        f.ignored = true
+      }
+      const n = f.newest
+      if (n) await $.fs.write(`${dir}/${n.name}`, n.text())
+    } while (f.owed)
+  } finally {
+    f.writing = false
+  }
+}
+
+/** Each part's piece of the status line; undefined until that part has a reading. */
+type Parts = { usage?: string; turns?: string; spend?: string }
+
+/** The one status line: the pieces that have a reading, spend | usage | turns (spend first: a narrow window cuts the end). */
+function showStatus($: EngineInterface, parts: Parts) {
+  const line = [parts.spend, parts.usage, parts.turns].filter(Boolean).join(' | ')
+  try {
+    $.ui.status(line || undefined)
+  } catch {
+    // a surface with no status line; the files still get written
+  }
+}
 
 export const register: Register = (on, options) => {
-  // whether this session has written the folder's .gitignore yet
-  const done = { ignore: false }
+  const usageOn = options.usageFile !== false
+  const turnsOn = options.turnTally !== false
+  const spendDir = String(options.dir || '.subagent-spend')
+  const usageDir = String(options.usageFileDir || '.usage-file')
+  const turnsDir = String(options.turnTallyDir || '.turn-tally')
+  // Only a folder of the mod's own name is its own; any other may hold the user's files (even be the
+  // project itself, `.`), so no .gitignore is written there.
+  const own = (dir: string, name: string) => dir.replace(/[\\/]+$/, '').split(/[\\/]/).at(-1) === name
+  const files = { spend: out(own(spendDir, '.subagent-spend')), usage: out(own(usageDir, '.usage-file')), turns: out(own(turnsDir, '.turn-tally')) }
+  const parts: Parts = {}
+  let spendWarned = false
+  // Numbers each measurement in the order the engine raised them; latest.json is written from the newest.
+  let seq = 0
+
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'subagent-spend', description: 'Show what each subagent of this session costs, in a pane' })
+      if (usageOn) await $.command.register({ name: 'usage-file', description: 'Show the rate-limit windows, context and cost of this session, in a pane' })
     } catch {
-      // a surface with no commands; the pane still opens at the first subagent
+      // a surface with no commands; the panes still open by themselves
     }
     return next(e)
   })
 
   on('command.run', { command: 'subagent-spend' }, async $ => {
-    await $.ui.open({ id: PANE, title: TITLE })
-    return { text: `Subagent spend pane opened. ${statusText()}` }
+    await $.ui.open({ id: SPEND_PANE, title: SPEND_TITLE })
+    return { text: `Subagent spend pane opened. ${spendStatus()}` }
   })
 
-  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+  on('command.run', { command: 'usage-file' }, async ($, e, next) => {
+    if (!usageOn) return next(e)
+    await $.ui.open({ id: USAGE_PANE, title: USAGE_TITLE })
+    const s = await read($, shownUsage)
+    return { text: `Usage pane opened. ${s ? shownStatus(s) : 'No measurement yet in this session.'}` }
+  })
+
+  on('ui.render', { component: 'Pane', requestId: SPEND_PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
-    const list = await read($, shown)
+    const list = await read($, shownRows)
     const room = Math.max(1, (e.viewport?.rows ?? 24) - 4)
     let tok = 0
     for (const r of list) tok += r.total
@@ -108,64 +185,128 @@ export const register: Register = (on, options) => {
     )
   })
 
+  on('ui.render', { component: 'Pane', requestId: USAGE_PANE }, async ($, e, next) => {
+    if (!usageOn) return next(e)
+    const { Box, Text } = $.ui.resolve(e)
+    const s = await read($, shownUsage)
+    if (!s) {
+      return (
+        <Box flexDirection="column">
+          <Text dimColor>No measurement yet in this session.</Text>
+        </Box>
+      )
+    }
+    const now = new Date()
+    return (
+      <Box flexDirection="column">
+        {s.windows.length === 0 && <Text dimColor>No rate-limit windows (not on a subscription).</Text>}
+        {usageLines(s, now).map((line, i) => (
+          <Text color={s.windows[i]!.percentUsed >= OPEN_AT ? 'red' : undefined}>{line}</Text>
+        ))}
+        {s.context !== null && <Text>{`Context     ${bar(s.context)}  ${s.context}%`}</Text>}
+        {s.usd !== null && <Text>{`Cost        $${s.usd.toFixed(2)}`}</Text>}
+        <Text dimColor>{`measured ${s.at.slice(11, 19)} UTC`}</Text>
+      </Box>
+    )
+  })
+
   on('agent.spawn', async ($, e, next) => {
     const started = await next(e)
     if (started.agentId) types.set(started.agentId, e.subagentType)
-    if (!opened) {
-      opened = true
-      // a surface that seats no panes refuses; the status line and ledger go on
-      $.ui.open({ id: PANE, title: TITLE }).catch(() => undefined)
+    await sessionNow($)
+    if (!spendOpened) {
+      spendOpened = true
+      // a surface that seats no panes refuses; the status line and rows file go on
+      $.ui.open({ id: SPEND_PANE, title: SPEND_TITLE }).catch(() => undefined)
     }
     return started
   }).catch(($, e, next) => next(e)) // an observer: whatever breaks here, the spawn goes on
 
-  on('turn.step', async function* ($, e, next) {
-    const response = yield* next(e)
-    if (!e.agentId || !response.usage) return response
-    const u = response.usage
-    const sessionId = await $.session.id()
-    const prior = rows.get(e.agentId)
-    const row: Row = {
-      ts: localIso(new Date()),
-      session_id: sessionId,
-      agent_id: e.agentId,
-      agent_type: types.get(e.agentId) ?? prior?.agent_type ?? '',
-      input: (prior?.input ?? 0) + u.input_tokens,
-      output: (prior?.output ?? 0) + u.output_tokens,
-      cache_read: (prior?.cache_read ?? 0) + u.cache_read_input_tokens,
-      cache_create: (prior?.cache_create ?? 0) + u.cache_creation_input_tokens,
-      turns: (prior?.turns ?? 0) + 1,
-      total: 0,
-      context: u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens + u.output_tokens,
-      model: u.model || prior?.model || e.model,
-    }
-    row.total = row.input + row.output + row.cache_read + row.cache_create
-    rows.set(e.agentId, row)
+  on('tool.call', async ($, e, next) => {
+    const ran = await next(e)
+    if (turnsOn) countCall(e.agentId, ran.deny !== undefined, ran.isError === true)
+    return ran
+  })
+
+  on('session.end', async ($, e, next) => {
+    startOver(e.sessionId)
+    parts.spend = undefined
+    showStatus($, parts)
+    return next(e)
+  })
+
+  on('session.measure', async ($, e, next) => {
+    if (!usageOn) return next(e)
+    const mine = ++seq
+    parts.usage = usageStatus(e)
+    showStatus($, parts)
     try {
-      await update($, shown, () => [...rows.values()])
+      // a newer measurement already shown keeps the pane; this one's figures are behind it
+      await update($, shownUsage, s => (mine !== seq ? s : shownOf(e, new Date())))
     } catch {
-      // the pane misses one redraw; the ledger is the record
+      // the pane misses one redraw; the file is the record
+    }
+    if (!usageOpened && e.rateLimits.some(w => w.percentUsed >= OPEN_AT)) {
+      usageOpened = true
+      // a surface that seats no panes refuses; the status line and file go on
+      $.ui.open({ id: USAGE_PANE, title: USAGE_TITLE }).catch(() => undefined)
     }
     try {
-      $.ui.status(statusText())
-    } catch {
-      // a surface with no status line; the ledger still gets written
-    }
-    try {
-      const dir = String(options.dir || '.subagent-spend')
-      // Before the first write of a session: `<dir>/.gitignore` holding `*`, so git ignores the folder in
-      // every project with no step from the user.
-      if (!done.ignore) {
-        await $.fs.write(`${dir}/.gitignore`, '*\n')
-        done.ignore = true
+      let session = ''
+      try {
+        session = await $.session.id()
+      } catch {
+        // no session id on this host: the file says null
       }
-      await $.fs.write(`${dir}/${sessionId}.jsonl`, ledgerText())
+      // a newer measurement already came while this one waited; its figures are the ones to write
+      if (mine === seq) files.usage.newest = { name: 'latest.json', text: () => fileText(e, session, new Date()) }
+      await writeLatest($, usageDir, files.usage)
+    } catch {
+      // unwritable folder: the file is advisory, the session goes on
+    }
+    return next(e)
+  })
+
+  on('turn.step', async function* ($, e, next) {
+    if (!e.agentId) {
+      if (!turnsOn) return yield* next(e)
+      // A main-loop step: counted as it starts, its file named and filled before any wait, so an
+      // older step can never land on top of a newer one.
+      tally.steps++
+      const now = new Date()
+      parts.turns = turnsStatus()
+      showStatus($, parts)
+      files.turns.newest = { name: `${localDay(now)}.txt`, text: () => tallyText(e.model, e.messageCount, now) }
+      try {
+        await writeLatest($, turnsDir, files.turns)
+      } catch {
+        // unwritable folder: the tally is advisory, the session goes on
+      }
+      return yield* next(e)
+    }
+    const response = yield* next(e)
+    if (!response.usage) return response
+    const agentId = e.agentId
+    const sessionId = await sessionNow($)
+    // a step whose id came back after its session ended: its rows file is closed
+    if (sessionId === null) return response
+    addStep(agentId, sessionId, response.usage, e.model, new Date())
+    try {
+      await update($, shownRows, () => [...rows.values()])
+    } catch {
+      // the pane misses one redraw; the rows file is the record
+    }
+    parts.spend = spendStatus()
+    showStatus($, parts)
+    try {
+      files.spend.newest = { name: `${sessionId || 'no-session'}.jsonl`, text: rowsText }
+      await writeLatest($, spendDir, files.spend)
     } catch (err) {
       // unwritable folder: say so once, then the session goes on
-      if (!warned) {
-        warned = true
+      if (!spendWarned) {
+        spendWarned = true
         try {
-          $.ui.status(`subagent-spend: ledger not written (${err instanceof Error ? err.message : String(err)})`)
+          $.ui.status(`subagent-spend: rows file not written (${err instanceof Error ? err.message : String(err)})`)
         } catch {
           // nothing left to tell it on
         }
