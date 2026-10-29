@@ -1,7 +1,7 @@
 {
   "name": "subagent-spend",
   "version": "0.6.0",
-  "description": "See what each Claude Code subagent costs in tokens: a side pane lists every subagent with its tokens, live per step, beside a local ledger, the status line and a report command.",
+  "description": "See what each Claude Code subagent costs in tokens: a side pane lists every subagent with its tokens, live per step, beside a local file, the status line and a report command.",
   "author": {
     "name": "Nightlab"
   },
@@ -19,8 +19,8 @@
   "userConfig": {
     "dir": {
       "type": "string",
-      "title": "Ledger folder",
-      "description": "Folder for the per-session ledger. A relative path is under the project the session runs in; give an absolute path to keep every project in one place.",
+      "title": "Rows folder",
+      "description": "Folder for the per-session rows file. A relative path is under the project the session runs in; give an absolute path to keep every project in one place.",
       "default": ".subagent-spend"
     }
   }
