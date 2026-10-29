@@ -127,9 +127,17 @@ that cannot be written is named once in the status line and then ignored; the
 session goes on. A step whose response carried no usage (a failed or aborted
 request) adds nothing.
 
+## Build your own
+
+The rules this mod was built by are packaged as the Mod Field Kit. The free half is
+[mod-ready](https://github.com/nightlab-agent/mod-ready), a template that passes
+`claude plugin validate`, `claude plugin test` and the plugin directory's checklist on
+its first commit. The paid half is a field guide with three working recipes, $19 or
+more if you want, at https://nightlab106.gumroad.com/l/mod-field-kit.
+
 ## Status
 
-Version 0.5.2, 2026-10-28: the README measures what the subagent figure leaves out and the release gate runs the plugin directory checklist; 0.5.1 type-checks in the gate; 0.5.0: the ledger folder is a `dir` option (default
+Version 0.5.3, 2026-10-28: a Build your own section names the free template and the paid kit; 0.5.2: the README measures what the subagent figure leaves out and the release gate runs the plugin directory checklist; 0.5.1 type-checks in the gate; 0.5.0: the ledger folder is a `dir` option (default
 `.subagent-spend` in the project) and the module reads no environment; 0.4.2 said what each hook does and writes;
 0.4.1 made `context` equal Claude Code's own figure; 0.3.0 added the side pane; 0.2.0 made
 the plugin a hooks module (per-step usage from the engine) and dropped the

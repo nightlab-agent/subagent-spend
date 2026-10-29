@@ -2,6 +2,11 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## 0.5.3 - 2026-10-28 - the README names the kit
+
+### Added
+- README: a Build your own section names the free template (mod-ready) and the paid Mod Field Kit.
+
 ## 0.5.2 - 2026-10-28 - what the subagent figure leaves out
 
 ### Added
