@@ -71,6 +71,8 @@ export const paneLines = (list: Row[]) =>
     .map(r => `${r.agent_type || 'agent'}  ${r.agent_id.slice(0, 6)}  ${r.turns} turns  ${fmt(r.total)} (out ${fmt(r.output)}, ctx ${fmt(r.context ?? 0)})  ${r.model}`)
 
 export const register: Register = (on, options) => {
+  // whether this session has written the folder's .gitignore yet
+  const done = { ignore: false }
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'subagent-spend', description: 'Show what each subagent of this session costs, in a pane' })
@@ -151,6 +153,12 @@ export const register: Register = (on, options) => {
     }
     try {
       const dir = String(options.dir || '.subagent-spend')
+      // Before the first write of a session: `<dir>/.gitignore` holding `*`, so git ignores the folder in
+      // every project with no step from the user.
+      if (!done.ignore) {
+        await $.fs.write(`${dir}/.gitignore`, '*\n')
+        done.ignore = true
+      }
       await $.fs.write(`${dir}/${sessionId}.jsonl`, ledgerText())
     } catch (err) {
       // unwritable folder: say so once, then the session goes on

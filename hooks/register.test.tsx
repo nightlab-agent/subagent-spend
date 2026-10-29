@@ -57,9 +57,9 @@ test('a subagent step writes one ledger row with the four counts, the turn, the 
 
   await step($, 0, 'agent-a')
 
-  expect(writes.length).toBe(1)
-  expect(writes[0]!.path).toBe('/ledger/sess-test.jsonl')
-  const rows = rowsOf(writes[0]!.text)
+  expect(writes.length).toBe(2)
+  expect(writes[1]!.path).toBe('/ledger/sess-test.jsonl')
+  const rows = rowsOf(writes[1]!.text)
   expect(rows.length).toBe(1)
   const r = rows[0]!
   expect(r.agent_id).toBe('agent-a')
@@ -205,4 +205,14 @@ test('a value an earlier version stored is declined, and the pane says none ran'
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: /yet/ }))?.text).toBe('No subagent has run in this session yet.')
   await ui.unmount()
+})
+
+test('before its first write the mod writes <dir>/.gitignore holding one line, *, once, so git never sees the folder', async ($, on) => {
+  const { writes } = world(on, () => usage(1, 1, 0, 0))
+  await step($, 0, 'agent-a')
+  await step($, 1, 'agent-a')
+  expect(writes[0]!.path.endsWith('/.subagent-spend/.gitignore')).toBe(true)
+  expect(writes[0]!.text).toBe('*\n')
+  expect(writes.filter(w => w.path.endsWith('/.gitignore')).length).toBe(1)
+  expect(writes.filter(w => w.path.endsWith('.jsonl')).length).toBe(2)
 })
