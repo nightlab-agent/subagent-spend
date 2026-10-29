@@ -23,6 +23,9 @@ with tempfile.TemporaryDirectory() as d:
     s = subprocess.run([sys.executable, "-I", str(TOOL), "statusline"], input=json.dumps({"session_id": "sess1", "model": {"display_name": "Opus"}}), text=True, capture_output=True, env=env)
     # 3 rows, 2 distinct agent_ids: the repeated SubagentStop for ag1 counts once (0.1.1 fix)
     assert s.stdout.strip() == "Opus | subagents 2 | tok 7340 (out 120)", s.stdout
+    # no session id: the same file name the mod uses (it was unknown.jsonl in the script)
+    subprocess.run([sys.executable, "-I", str(TOOL), "hook"], input=json.dumps({"hook_event_name": "SubagentStop", "agent_id": "ag3", "agent_transcript_path": str(tr)}), text=True, capture_output=True, env=env)
+    assert (out / "no-session.jsonl").exists() and not (out / "unknown.jsonl").exists(), sorted(x.name for x in out.iterdir())
     bad = subprocess.run([sys.executable, "-I", str(TOOL), "hook"], input="{not json", text=True, capture_output=True, env=env); assert bad.returncode == 0
     hl = subprocess.run([sys.executable, "-I", str(TOOL), "--help"], text=True, capture_output=True, env=env); assert hl.returncode == 0 and "report" in hl.stdout, hl
     un = subprocess.run([sys.executable, "-I", str(TOOL), "bogus"], text=True, capture_output=True, env=env); assert un.returncode == 2 and "unknown command" in un.stderr and not un.stdout, un

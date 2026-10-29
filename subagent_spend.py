@@ -48,7 +48,7 @@ def hook():
         path = h.get("agent_transcript_path")
         if not path or not pathlib.Path(path).exists(): return 0
         t = sum_transcript(path)
-        row = {"ts": datetime.datetime.now().astimezone().isoformat(timespec="seconds"), "session_id": h.get("session_id", "unknown"),
+        row = {"ts": datetime.datetime.now().astimezone().isoformat(timespec="seconds"), "session_id": h.get("session_id") or "no-session",
                "agent_id": h.get("agent_id"), "agent_type": h.get("agent_type") or h.get("subagent_type") or "", **t}
         with open(rows_dir() / f"{row['session_id']}.jsonl", "a", encoding="utf-8") as f: f.write(json.dumps(row) + "\n")
     except Exception as e:  # never block the session

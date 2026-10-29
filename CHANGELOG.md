@@ -11,6 +11,8 @@ options, new files written and a new status line.
 - A /clear while a rows-file write was waiting on the disk emptied the old session's file: the text is now taken
   when the step is counted. After a /clear the subagent pane and the Usage pane went on showing the old session (the
   command already said 0); both now start empty, and the usage part of the status line waits for the new reading.
+- The by-hand script named the rows file `unknown.jsonl` when Claude Code gave no session id; it is now
+  `no-session.jsonl`, as the mod and the README name it.
 - Each `.gitignore` is written only in a folder of the mod's own name: with `dir` set to `.`, it replaced the
   project's own `.gitignore` with `*`. The by-hand script keeps the same rule for `SUBAGENT_SPEND_DIR`.
 - After a `/clear` (a new session id with no new session start) the old session's subagents no longer land in the
