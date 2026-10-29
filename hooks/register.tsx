@@ -231,7 +231,15 @@ export const register: Register = (on, options) => {
   on('session.end', async ($, e, next) => {
     startOver(e.sessionId)
     parts.spend = undefined
+    // cost and context belong to the session left: the panes and the line wait for the new one's first reading
+    parts.usage = undefined
     showStatus($, parts)
+    try {
+      await update($, shownRows, () => [])
+      await update($, shownUsage, () => null)
+    } catch {
+      // the panes miss one redraw; the next step or measurement draws them
+    }
     return next(e)
   })
 
@@ -299,7 +307,9 @@ export const register: Register = (on, options) => {
     parts.spend = spendStatus()
     showStatus($, parts)
     try {
-      files.spend.newest = { name: `${sessionId || 'no-session'}.jsonl`, text: rowsText }
+      // the text is taken now, not at the write: a /clear while a write waits empties the Map it reads
+      const text = rowsText()
+      files.spend.newest = { name: `${sessionId || 'no-session'}.jsonl`, text: () => text }
       await writeLatest($, spendDir, files.spend)
     } catch (err) {
       // unwritable folder: say so once, then the session goes on

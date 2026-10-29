@@ -7,7 +7,7 @@
     {
       "name": "subagent-spend",
       "source": "./",
-      "description": "Per-subagent tokens, rate-limit windows, context fill, cost, steps, tool calls and tool errors of a Claude Code session, in a notice under the prompt, local files and panes (the panes not yet seen on a screen).",
+      "description": "Per-subagent tokens, rate-limit windows, context fill, cost, steps, tool calls and tool errors of a Claude Code session, in a notice under the prompt, local files and panes (the usage pane not yet seen on a screen).",
       "version": "0.7.0",
       "category": "productivity"
     }

@@ -8,6 +8,9 @@ Three separate mods (subagent-spend, usage-file, turn-tally) measured one sessio
 options, new files written and a new status line.
 
 ### Fixed
+- A /clear while a rows-file write was waiting on the disk emptied the old session's file: the text is now taken
+  when the step is counted. After a /clear the subagent pane and the Usage pane went on showing the old session (the
+  command already said 0); both now start empty, and the usage part of the status line waits for the new reading.
 - Each `.gitignore` is written only in a folder of the mod's own name: with `dir` set to `.`, it replaced the
   project's own `.gitignore` with `*`. The by-hand script keeps the same rule for `SUBAGENT_SPEND_DIR`.
 - After a `/clear` (a new session id with no new session start) the old session's subagents no longer land in the
@@ -18,10 +21,10 @@ options, new files written and a new status line.
 - A deleted folder came back in the same session without its `.gitignore`, so git saw the rows file: the
   `.gitignore` is now checked before every write.
 - Tests for the `/clear` (old rows kept apart, the pane and the command starting over, a late session id, a
-  resume), a deleted folder, a host with no session id, and the by-hand script's `.gitignore` rule; 57 module tests in all.
+  resume), a deleted folder, a host with no session id, and the by-hand script's `.gitignore` rule, and a write still waiting across a /clear; 62 module tests in all.
 
 ### Changed
-- plugin.json and marketplace.json say the panes are not yet seen on a screen.
+- plugin.json and marketplace.json say the usage pane is not yet seen on a screen (the subagent pane was seen at 150 columns).
 - README: Install comes right after the opening paragraph and names the Claude Code versions it needs
   (2.1.275 for `/plugin install --marketplace`, 2.1.292 for the shell form, from Claude Code's CHANGELOG); the
   notice is shown as a terminal drew it, with the `⚠ subagent-spend:` Claude Code puts in front; claude-hud's

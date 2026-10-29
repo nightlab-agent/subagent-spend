@@ -6,15 +6,17 @@ This mod (a plugin that adds behaviour to Claude Code) shows three things in
 one line under the prompt and writes each to a small local file a script can
 read: the tokens each subagent used, summed per subagent; the usage limits;
 and a running count of steps, tool calls and tool errors. It also has side
-panes, not yet seen on a real screen. Nothing leaves your machine.
+panes: the subagent pane is seen below; the Usage pane is not yet seen on a
+real screen. Nothing leaves your machine.
 
-![The bottom of Claude Code after three subagents ran: the line under the prompt reads subagents 3, tok 148k, then the usage windows, cost and step counts](docs/preview.png)
+![Claude Code after three subagents ran: the subagent pane lists the three with their turns and tokens, and the line under the prompt reads subagents 3, tok 218k, then the usage windows, cost and step counts](docs/preview.png)
 
-Seen in a Claude Code 2.1.312 terminal (120 columns) on 2026-10-29, after
-three subagents ran; the window cut the end of the line with "…". `tok`
-counts every token the subagents sent and got, cache reads included, so it
-is larger than the token figure each subagent reports when it returns (the
-answer above the line used those: about 82k).
+Seen in a Claude Code 2.1.312 terminal (150 columns) on 2026-10-29, after
+three subagents ran: the subagent pane opened by itself and the whole line
+fits. `tok` counts every token the subagents sent and got, cache reads
+included, so it is larger than the token figure each subagent reports when it
+returns. At 120 columns the same session drew no pane and the end of the line
+was cut with "…".
 
 ## Install
 
@@ -78,16 +80,17 @@ usage-file and turn-tally; each can be turned off on its own.
 
 | Part | Shows | Writes |
 |---|---|---|
-| Subagent spend | every subagent's tokens, turns and model, in a pane (not yet seen on a screen) | `.subagent-spend/<session_id>.jsonl` |
+| Subagent spend | every subagent's tokens, turns and model, in a pane | `.subagent-spend/<session_id>.jsonl` |
 | Usage (`usageFile`) | rate-limit windows, context fill and cost, in a pane (not yet seen on a screen) | `.usage-file/latest.json` |
 | Turn counts (`turnTally`) | main-conversation steps, tool calls and tool errors | `.turn-tally/<YYYY-MM-DD>.txt` |
 
-What the panes and the status line hold, written out. The panes are not
-yet seen on a real screen: every terminal preview of this version
-(Claude Code 2.1.312, all 120 columns wide) drew the notice under the prompt
-but no pane, and none was run at 144 columns or wider. The two pane examples below are what the code draws, not a capture.
+What the panes and the status line hold, written out. In the previews of
+this version (Claude Code 2.1.312), the 120-column ones drew no pane and the
+150-column one opened the subagent pane by itself; the Usage pane has not
+been seen. The two pane examples below are what the code draws, not a capture.
 
 ```
+2 subagents, 53k tokens
 Explore  a1b2c3  8 turns  41k (out 2104, ctx 24k)  claude-opus-5-5
 claude   d4e5f6  3 turns  12k (out 640, ctx 9k)  claude-opus-5-5
 ```
@@ -116,8 +119,7 @@ the input, output, cache-read and cache-creation tokens the API reported for
 each of its steps, summed as the steps happen (the pane updating step by
 step is not yet seen on a real screen). `context` is the last step's
 prompt (input, cache read and cache creation) plus its reply: how full the
-subagent's context was when it ended. The pane (not yet seen on a real
-screen) opens by itself at the first subagent of a session and lists them, biggest spender first, as many as its height holds;
+subagent's context was when it ended. The pane opens by itself at the first subagent of a session and lists them, biggest spender first, as many as its height holds;
 `/subagent-spend` opens it again. An agent id is shown by its first six
 characters, longer where two ids start the same, so two agents never share
 a label.
@@ -129,8 +131,8 @@ main conversation, and when a window moves a whole point). `/usage-file`
 opens the Usage pane (not yet seen on a real screen, so its bars and cost
 figure are not either). It also asks to open itself once, the first time any
 window reaches 80 percent; Claude Code places a pane nobody asked for only
-when the terminal is at least 144 columns wide, and no narrower terminal has
-been tried. A window at 80 percent or
+when the terminal is at least 144 columns wide; the self-opening at 80
+percent has not been tried at any width. A window at 80 percent or
 more is drawn in red (not yet seen on a real screen).
 
 **Turn counts.** A step is one model request on the main conversation.
@@ -321,7 +323,7 @@ or under an option folder).
 sh tests/release.sh
 ```
 
-That runs `claude plugin validate .`; `claude plugin test .`, 57 tests
+That runs `claude plugin validate .`; `claude plugin test .`, 62 tests
 through the test runner Claude Code ships for plugins, with a mocked file
 system and mocked Claude Code events (the tests of the three former mods, one per
 option turned off, and tests where events finish out of order, arrive two at
