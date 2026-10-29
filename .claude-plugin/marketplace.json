@@ -7,7 +7,7 @@
     {
       "name": "subagent-spend",
       "source": "./",
-      "description": "See what each Claude Code subagent costs in tokens, per step, in a side pane, a ledger and the status line.",
+      "description": "See what each Claude Code subagent costs in tokens, per step, in a side pane, a local file and the status line.",
       "version": "0.6.0",
       "category": "productivity"
     }
