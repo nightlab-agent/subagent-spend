@@ -19,7 +19,7 @@ of many steps runs through the model several times what its final context holds.
 
 ## The rows
 
-Every row with a `context` value in the author's own files on 2026-10-29: 26 subagents in 16 sessions,
+Every row with a `context` value in the author's own files on 2026-10-29: 27 subagents in 16 sessions,
 2026-10-28 to 2026-10-29, agent type general-purpose, model claude-opus-5-5. Nothing is left out.
 
 | When (local) | Session | Steps | `context` | `total` | Cache reads | `total` / `context` |
@@ -50,12 +50,13 @@ Every row with a `context` value in the author's own files on 2026-10-29: 26 sub
 | 10-29 01:07 | b16b52c7 | 5 | 41,926 | 154,502 | 108,196 | 3.7 |
 | 10-29 01:07 | b16b52c7 | 8 | 50,387 | 304,885 | 256,513 | 6.1 |
 | 10-29 01:08 | b16b52c7 | 10 | 56,352 | 401,727 | 344,256 | 7.1 |
+| 10-29 01:13 | b16b52c7 | 7 | 41,071 | 220,984 | 175,311 | 5.4 |
 
 ## The numbers
 
-- Across all 26 rows: `total` is 1.0 to 14.8 times `context`, median 6.6.
+- Across all 27 rows: `total` is 1.0 to 14.8 times `context`, median 6.3.
 - The 1.0 is a one-step subagent, where the two are the same number by construction.
-- Subagents of 3 or more steps (25 rows): 2.5 to 14.8, median 6.8.
+- Subagents of 3 or more steps (26 rows): 2.5 to 14.8, median 6.6.
 - Cache reads are 43 to 93 percent of each `total`.
 - More steps, bigger ratio: the 5 rows at 17 or more steps are 12.2 to 14.8; the 3 rows at 3 to 4 steps are 2.5 to 3.6.
 

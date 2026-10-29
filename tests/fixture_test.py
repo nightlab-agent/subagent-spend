@@ -24,4 +24,4 @@ with tempfile.TemporaryDirectory() as d:
     assert s.stdout.strip() == "Opus | subagents 2 | tok 7340 (out 120)", s.stdout
     bad = subprocess.run([sys.executable, "-I", str(TOOL), "hook"], input="{not json", text=True, capture_output=True, env=env); assert bad.returncode == 0
     rep = subprocess.run([sys.executable, "-I", str(TOOL), "report", "--all"], text=True, capture_output=True, env=env); assert "Explore" in rep.stdout and "general-purpose" in rep.stdout and rep.stdout.count("sess1") == 2, rep.stdout
-    print("fixture test: 8 checks passed (3 rows, 2 distinct agents, the folder ignores itself)"); print(s.stdout.strip()); print(rep.stdout)
+    print("fixture test passed (3 rows, 2 distinct agents, the repeated stop counted once, the folder ignores itself)"); print(s.stdout.strip()); print(rep.stdout)

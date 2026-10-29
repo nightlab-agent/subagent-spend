@@ -8,9 +8,9 @@ The form is Keep a Changelog; versions follow SemVer.
 - Before its first write in a session the mod writes `<dir>/.gitignore` holding one line, `*`, so git ignores the
   folder in every project with no step from you (found by an outside review, 2026-10-29).
 - A test for it, which failed before the change. The by-hand script `subagent_spend.py` writes the same `.gitignore`
-  when it makes the folder (fixture test: 8 checks, was 7).
-- `docs/finding.md`: the subagent-token finding written up from every recorded row (26 subagents, 16 sessions),
-  with the method and what it does not say. The README's six-row table said "every row" when it was the first six
+  when it makes the folder (checked by the fixture test).
+- `docs/finding.md`: the subagent-token finding written up from every row recorded before 2026-10-29 01:10 (26
+  subagents, 16 sessions), with the method, the three hand checks and what it does not say. The README's six-row table said "every row" when it was the first six
   measured; it now says so and points at the full set.
 
 ### Changed

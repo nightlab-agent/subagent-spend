@@ -49,27 +49,29 @@ By hand, for a Claude Code that loads no hooks modules (three steps):
    `.subagent-spend` in the folder Claude Code runs in, or under
    `$SUBAGENT_SPEND_DIR` if you set it.
 
-Install one of the two, not both: they write the same file in different ways
-(the plugin rewrites it whole, the script appends), so each would overwrite
-the other's rows.
+Install one of the two, not both: both write rows for the same subagents
+into the same file, the plugin rewriting it whole and the script appending,
+so the two sets collide. The script's `statusline` command also creates the
+folder (and its `.gitignore`) in whatever project Claude Code runs in.
 
 If a row looks wrong, open an issue with the row and the step it came from.
 
 ## Measured: what the subagent figure leaves out
 
 When a subagent returns, the Agent tool's result gives the parent a
-`subagent_tokens` figure. In two checks it equalled the last step's prompt
-plus its reply exactly, and a third matched the prompt part: roughly how
-full the subagent's context was at the end, not how many tokens went
-through the model. Each step re-sends everything so far, so a subagent that
+`subagent_tokens` figure. In three hand checks it equalled the last step's
+prompt plus its reply (two of the rows, from an older version, stored the
+prompt alone and were short by exactly the reply): roughly how full the
+subagent's context was at the end, not how many tokens went through the
+model. Each step re-sends everything so far, so a subagent that
 takes many steps runs through several times the figure.
 
-[docs/finding.md](docs/finding.md) holds every row this mod has recorded
-with a `context` value in the author's own sessions, 26 subagents in 16
-sessions on 2026-10-28 and 10-29, all general-purpose on Claude Opus 5.5,
-nothing left out: the tokens through the model were 1.0 (a one-step
-subagent) to 14.8 times the figure, median 6.6; for subagents of 3 or more
-steps, 2.5 to 14.8. Six of those rows, the first ones measured:
+[docs/finding.md](docs/finding.md) holds every row this mod recorded with a
+`context` value in the author's own sessions before 2026-10-29 01:10 local:
+26 subagents in 16 sessions, all general-purpose on Claude Opus 5.5, none
+left out. The tokens through the model were 1.0 (a one-step subagent) to
+14.8 times the figure, median 6.6; for the 25 subagents of 3 or more steps,
+2.5 to 14.8. Six of those rows, the ones the first write-up used:
 
 | Steps | `context` (= `subagent_tokens`) | Tokens through the model | Of which cache reads | Times the figure |
 |---|---|---|---|---|
@@ -166,7 +168,8 @@ through the test runner Claude Code ships for plugins, four of them on the
 pane), a type check with `tsc --noEmit` against Claude Code's declarations,
 a checklist of rules that Anthropic's plugin directory raised on earlier
 submissions (this mod was one of them; it is submitted, not approved),
-8 checks of the by-hand path (`tests/fixture_test.py`), and a check that the version string agrees in
+the by-hand path's test on a made-up transcript
+(`tests/fixture_test.py`), and a check that the version string agrees in
 plugin.json, marketplace.json, subagent_spend.py and CHANGELOG.md. It exits
 non-zero if any step fails. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
