@@ -17,7 +17,10 @@ import json, os, sys, pathlib, datetime
 
 def ledger_dir():
     d = pathlib.Path(os.environ.get("SUBAGENT_SPEND_DIR") or pathlib.Path.cwd() / ".subagent-spend")
-    d.mkdir(parents=True, exist_ok=True); return d
+    d.mkdir(parents=True, exist_ok=True)
+    ig = d / ".gitignore"  # git ignores the folder in every project, with no step from the user
+    if not ig.exists(): ig.write_text("*\n")
+    return d
 
 def sum_transcript(path):
     """Sum usage over assistant messages; one message id counted once (streaming writes it more than once)."""

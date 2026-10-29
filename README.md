@@ -6,7 +6,7 @@ Claude Code reports the session total; a subagent's usage is not broken out,
 so a burst of readers can empty a weekly window before you notice. This mod
 (a plugin that adds behaviour to Claude Code) opens a side pane at the first
 subagent of a session listing every one of them, biggest spender first, with
-its turns, tokens and model, updated on each step. It keeps the same rows in
+its turns (one model request each), tokens and model, updated on each step. It keeps the same rows in
 one local file and shows the running total in the status line. Nothing
 leaves your machine.
 
@@ -45,23 +45,31 @@ By hand, for a Claude Code that loads no hooks modules (three steps):
    `python3 -I <path>/subagent_spend.py statusline`. The exact JSON is in
    `kit/settings-snippet.json`; merge it with what you already have.
 3. Start a session that uses a subagent. The status line reads
-   `Opus | subagents 2 | tok 7340 (out 120)`.
+   `Opus | subagents 2 | tok 7340 (out 120)`. The script writes under
+   `.subagent-spend` in the folder Claude Code runs in, or under
+   `$SUBAGENT_SPEND_DIR` if you set it.
 
-Install one of the two, not both: both write the same rows and every agent
-would be counted twice.
+Install one of the two, not both: they write the same file in different ways
+(the plugin rewrites it whole, the script appends), so each would overwrite
+the other's rows.
 
 If a row looks wrong, open an issue with the row and the step it came from.
 
 ## Measured: what the subagent figure leaves out
 
 When a subagent returns, the Agent tool's result gives the parent a
-`subagent_tokens` figure. In three checks it equalled the last step's prompt
-plus its reply: roughly how full the subagent's context was at the end, not
-how many tokens went through the model. Each step re-sends everything so
-far, so a subagent that takes many steps runs through several times the
-figure. Below is every row this mod recorded in the author's own workspace
-on 2026-10-28: four sessions, six general-purpose subagents, all on Claude
-Opus 5.5.
+`subagent_tokens` figure. In two checks it equalled the last step's prompt
+plus its reply exactly, and a third matched the prompt part: roughly how
+full the subagent's context was at the end, not how many tokens went
+through the model. Each step re-sends everything so far, so a subagent that
+takes many steps runs through several times the figure.
+
+[docs/finding.md](docs/finding.md) holds every row this mod has recorded
+with a `context` value in the author's own sessions, 26 subagents in 16
+sessions on 2026-10-28 and 10-29, all general-purpose on Claude Opus 5.5,
+nothing left out: the tokens through the model were 1.0 (a one-step
+subagent) to 14.8 times the figure, median 6.6; for subagents of 3 or more
+steps, 2.5 to 14.8. Six of those rows, the first ones measured:
 
 | Steps | `context` (= `subagent_tokens`) | Tokens through the model | Of which cache reads | Times the figure |
 |---|---|---|---|---|
@@ -72,13 +80,10 @@ Opus 5.5.
 | 23 | 107,973 | 1,314,130 | 1,185,113 | 12.2 |
 | 25 | 93,251 | 1,384,150 | 1,286,615 | 14.8 |
 
-The printed figure was read beside its row for the first run only (25,590
-both); the earlier two checks (18,028 and 50,279) were on rows from version
-0.4.0 plus the last reply, which 0.4.1 added to `context`. Most of each
-total is cache reads; the API prices input, output, cache reads and cache
-writes differently, so this is a token count, not a cost. How each class
-counts against a subscription's usage limits is not published. Six runs on
-one machine, not a benchmark.
+Most of each total is cache reads; the API prices input, output, cache
+reads and cache writes differently, so this is a token count (one machine,
+one account, one agent type), not a cost or a benchmark. How each kind of
+token counts against a subscription's usage limits is not published.
 
 Check it on your own subagents: run one, find `subagent_tokens` in the
 result the Agent tool returns, then find the row with the same `agent_id` in
@@ -111,13 +116,14 @@ holding:
   the folder in every project with no step from you.
 - one file per session, `<session_id>.jsonl`, one JSON row per subagent,
   rewritten after every subagent step. The by-hand hook writes the same
-  rows, once per subagent, when it stops.
+  rows, once per subagent, when it stops, and the same `.gitignore`.
 
-A row holds the counts, the agent's id and type, the model name and a time.
+A row holds the counts, the agent's id and type, the session id, the model
+name and a time.
 No prompt or reply text is stored. To forget a session's rows, end the
 session and delete its file or the folder: a running session writes the
-file again on the next subagent step. Nothing reads the files but the
-`report` command and you.
+file again on the next subagent step. Nothing reads the files but this
+repo's `report` and `statusline` commands, and you.
 
 The folder is the mod's one option, `dir` (set it in `/config`). A relative
 path is under the project; an absolute path keeps every project's rows in
@@ -159,8 +165,8 @@ That runs `claude plugin validate .`, `claude plugin test .` (12 tests
 through the test runner Claude Code ships for plugins, four of them on the
 pane), a type check with `tsc --noEmit` against Claude Code's declarations,
 a checklist of rules that Anthropic's plugin directory raised on earlier
-submissions of mods like this one, 6 checks of the by-hand path
-(`tests/fixture_test.py`), and a check that the version string agrees in
+submissions (this mod was one of them; it is submitted, not approved),
+8 checks of the by-hand path (`tests/fixture_test.py`), and a check that the version string agrees in
 plugin.json, marketplace.json, subagent_spend.py and CHANGELOG.md. It exits
 non-zero if any step fails. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
