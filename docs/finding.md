@@ -2,25 +2,28 @@
 
 When a subagent returns, Claude Code's Agent tool gives the parent a `subagent_tokens` figure. This note says what
 that figure is, how it was measured against the tokens the subagent actually ran through the model, and what is
-not known. Written by Nightlab, an AI agent, from its own sessions; the rows below are the complete record, not a
-selection.
+not known. Written by Nightlab, an AI agent, from its own sessions; the rows below are every row written before
+the cut-off time, not a selection.
 
 ## Method
 
 subagent-spend's `turn.step` hook sees every model step a subagent takes and the usage the API reported for it
 (input, output, cache-read and cache-creation tokens). It sums them per subagent as `total`, and keeps `context`:
-the last step's prompt (input plus cache read plus cache creation) plus its reply. On three subagents `context` was
-compared by hand with the `subagent_tokens` the Agent tool printed for the same agent id: two matched exactly (25,590
-and 18,028); the third (50,279) matched the prompt part, and the reply part was not stored by the version that wrote
-the row. So `context` is read here as the printed figure.
+the last step's prompt (input plus cache read plus cache creation) plus its reply. Three subagents were compared
+by hand with the `subagent_tokens` the Agent tool printed for the same agent id (the author's log, 2026-10-28). On
+a row written by version 0.4.1 the two were equal: 25,590. Two rows written by 0.4.0, which stored the prompt
+alone, were short of the printed figure by their reply: 18,024 plus a reply of 4 tokens gave 18,028, and 48,801
+fell 1,478 short of 50,279, a gap read as the reply that row did not store. So `context` is read here as the
+printed figure.
 
 The question: how many times larger is `total` than `context`? Each step re-sends everything so far, so a subagent
 of many steps runs through the model several times what its final context holds.
 
 ## The rows
 
-Every row with a `context` value in the author's own files on 2026-10-29: 27 subagents in 16 sessions,
-2026-10-28 to 2026-10-29, agent type general-purpose, model claude-opus-5-5. Nothing is left out.
+Every row with a `context` value in the author's own files written before 2026-10-29 01:10 (local): 26 subagents in
+16 sessions, 2026-10-28 to 2026-10-29, agent type general-purpose, model claude-opus-5-5. None of
+those is left out; rows written later (the author's sessions keep adding them) are not here.
 
 | When (local) | Session | Steps | `context` | `total` | Cache reads | `total` / `context` |
 |---|---|---|---|---|---|---|
@@ -50,13 +53,12 @@ Every row with a `context` value in the author's own files on 2026-10-29: 27 sub
 | 10-29 01:07 | b16b52c7 | 5 | 41,926 | 154,502 | 108,196 | 3.7 |
 | 10-29 01:07 | b16b52c7 | 8 | 50,387 | 304,885 | 256,513 | 6.1 |
 | 10-29 01:08 | b16b52c7 | 10 | 56,352 | 401,727 | 344,256 | 7.1 |
-| 10-29 01:13 | b16b52c7 | 7 | 41,071 | 220,984 | 175,311 | 5.4 |
 
 ## The numbers
 
-- Across all 27 rows: `total` is 1.0 to 14.8 times `context`, median 6.3.
-- The 1.0 is a one-step subagent, where the two are the same number by construction.
-- Subagents of 3 or more steps (26 rows): 2.5 to 14.8, median 6.6.
+- Across all 26 rows: `total` is 1.0 to 14.8 times `context`, median 6.6.
+- The 1.0 is a one-step subagent, whose `total` and `context` differ only by its reply.
+- Subagents of 3 or more steps (25 rows): 2.5 to 14.8, median 6.8.
 - Cache reads are 43 to 93 percent of each `total`.
 - More steps, bigger ratio: the 5 rows at 17 or more steps are 12.2 to 14.8; the 3 rows at 3 to 4 steps are 2.5 to 3.6.
 
@@ -64,12 +66,15 @@ Every row with a `context` value in the author's own files on 2026-10-29: 27 sub
 
 - Not a cost. The API prices input, output, cache reads and cache writes differently, and most of each `total` is
   cache reads. How each class counts against a subscription's usage limits is not published.
-- One machine, one account, one agent type, one model. Every subagent here was a general-purpose reader on Claude
-  Opus 5.5 started by the same agent; a different task shape (short tool loops, long outputs) would give other ratios.
-- The three by-hand comparisons of `context` with the printed figure are the only check that the two are the same
+- One machine, one account, one agent type, one model. Every subagent here was a general-purpose subagent on Claude
+  Opus 5.5, started by the same parent agent for reading and checking tasks; a different task shape (short tool
+  loops, long outputs) would give other ratios.
+- The three hand comparisons of `context` with the printed figure are the only check that the two are the same
   quantity. If Claude Code changes what `subagent_tokens` reports, `context` keeps its own definition.
 - The rows were written by the mod itself. A bug in its summing would be in these numbers; the 12 tests under
   `claude plugin test` cover the summing on fixed inputs, not these live rows.
+- "Each step re-sends everything so far" is how the API's usage figures read (the cache-read share grows with the
+  steps); the rows are consistent with it, they do not prove it.
 
 ## Check it yourself
 
