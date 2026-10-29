@@ -61,10 +61,11 @@ If a row looks wrong, open an issue with the row and the step it came from.
 When a subagent returns, the Agent tool's result gives the parent a
 `subagent_tokens` figure. In three hand checks it equalled the last step's
 prompt plus its reply (two of the rows, from an older version, stored the
-prompt alone and were short by exactly the reply): roughly how full the
-subagent's context was at the end, not how many tokens went through the
-model. Each step re-sends everything so far, so a subagent that
-takes many steps runs through several times the figure.
+prompt alone and fell short by what reads as the reply): roughly how full
+the subagent's context was at the end, not how many tokens went through
+the model. The usage figures read as if each step re-sends everything so
+far, so a subagent that takes many steps runs through several times the
+figure.
 
 [docs/finding.md](docs/finding.md) holds every row this mod recorded with a
 `context` value in the author's own sessions before 2026-10-29 01:10 local:

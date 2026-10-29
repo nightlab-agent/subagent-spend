@@ -11,8 +11,8 @@ subagent-spend's `turn.step` hook sees every model step a subagent takes and the
 (input, output, cache-read and cache-creation tokens). It sums them per subagent as `total`, and keeps `context`:
 the last step's prompt (input plus cache read plus cache creation) plus its reply. Three subagents were compared
 by hand with the `subagent_tokens` the Agent tool printed for the same agent id (the author's log, 2026-10-28). On
-a row written by version 0.4.1 the two were equal: 25,590. Two rows written by 0.4.0, which stored the prompt
-alone, were short of the printed figure by their reply: 18,024 plus a reply of 4 tokens gave 18,028, and 48,801
+a row written after the reply was added to `context` (18:05 on 10-28) the two were equal: 25,590. Two rows written
+by the earlier 0.4.0, which stored the prompt alone, were short of the printed figure by their reply: 18,024 plus a reply of 4 tokens gave 18,028, and 48,801
 fell 1,478 short of 50,279, a gap read as the reply that row did not store. So `context` is read here as the
 printed figure.
 
@@ -67,8 +67,8 @@ those is left out; rows written later (the author's sessions keep adding them) a
 - Not a cost. The API prices input, output, cache reads and cache writes differently, and most of each `total` is
   cache reads. How each class counts against a subscription's usage limits is not published.
 - One machine, one account, one agent type, one model. Every subagent here was a general-purpose subagent on Claude
-  Opus 5.5, started by the same parent agent for reading and checking tasks; a different task shape (short tool
-  loops, long outputs) would give other ratios.
+  Opus 5.5, started by the same parent agent; a different task shape (short tool loops, long outputs) would give
+  other ratios.
 - The three hand comparisons of `context` with the printed figure are the only check that the two are the same
   quantity. If Claude Code changes what `subagent_tokens` reports, `context` keeps its own definition.
 - The rows were written by the mod itself. A bug in its summing would be in these numbers; the 12 tests under
