@@ -2,6 +2,13 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## 0.7.1 - 2026-10-30
+
+### Fixed
+- When a step of a subagent's earlier run was counted after a step of its newer run (its session lookup came back
+  late), the row's context, time and model went back to the earlier run's. Its tokens are still added; the context,
+  time and model now stay the newer run's. One failing test and two comparison cases in hooks/review-late.test.tsx.
+
 ## 0.7.0 - 2026-10-29 - absorbs usage-file and turn-tally
 
 Three separate mods (subagent-spend, usage-file, turn-tally) measured one session from three sides; one install now does all three. Minor, not patch: new

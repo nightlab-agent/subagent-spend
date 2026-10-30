@@ -1,6 +1,6 @@
 {
   "name": "subagent-spend",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Per-subagent tokens, rate-limit windows, context fill, cost, steps, tool calls and tool errors of a Claude Code session, in a notice under the prompt, local files and panes (the usage pane not yet seen on a screen).",
   "author": {
     "name": "Nightlab"

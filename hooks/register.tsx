@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Row, Shown } from '../types'
-import { addStep, fmt, rowsText, paneLines, rows, spendStatus, types } from './spend'
+import { addStep, fmt, latest, nextStep, rowsText, paneLines, rows, spendStatus, types } from './spend'
 import { countCall, localDay, tally, tallyText, turnsStatus } from './turns'
 import { OPEN_AT, bar, fileText, shownOf, shownStatus, usageLines, usageStatus } from './usage'
 
@@ -56,6 +56,7 @@ function startOver(left: string | null) {
   switchedAt = asks
   rowsSession = null
   rows.clear()
+  latest.clear()
   spendOpened = false
   usageOpened = false
 }
@@ -295,10 +296,11 @@ export const register: Register = (on, options) => {
     const response = yield* next(e)
     if (!response.usage) return response
     const agentId = e.agentId
+    const order = nextStep()
     const sessionId = await sessionNow($)
     // a step whose id came back after its session ended: its rows file is closed
     if (sessionId === null) return response
-    addStep(agentId, sessionId, response.usage, e.model, new Date())
+    addStep(agentId, sessionId, response.usage, e.model, new Date(), order)
     try {
       await update($, shownRows, () => [...rows.values()])
     } catch {

@@ -8,6 +8,11 @@ import type { Row } from '../types'
 
 export const rows = new Map<string, Row>()
 export const types = new Map<string, string>()
+/** The order number of the step that last set each row's context, ts and model. */
+export const latest = new Map<string, number>()
+let stepCount = 0
+/** Takes a step's order number when its response arrives, before any wait. */
+export const nextStep = () => ++stepCount
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -34,11 +39,13 @@ export type StepUsage = {
   model?: string
 }
 
-/** Adds one step to the agent's row. Reads the prior row at the moment it adds, never before a wait. */
-export const addStep = (agentId: string, sessionId: string, u: StepUsage, model: string, now: Date): Row => {
+/** Adds one step to the agent's row. Reads the prior row at the moment it adds, never before a wait. A step
+ * that lands after a newer one of the same agent adds its tokens but keeps the newer context, ts and model. */
+export const addStep = (agentId: string, sessionId: string, u: StepUsage, model: string, now: Date, order = nextStep()): Row => {
   const prior = rows.get(agentId)
+  const older = prior !== undefined && (latest.get(agentId) ?? 0) > order
   const row: Row = {
-    ts: localIso(now),
+    ts: older ? prior.ts : localIso(now),
     session_id: sessionId,
     agent_id: agentId,
     agent_type: types.get(agentId) ?? prior?.agent_type ?? '',
@@ -48,9 +55,10 @@ export const addStep = (agentId: string, sessionId: string, u: StepUsage, model:
     cache_create: (prior?.cache_create ?? 0) + u.cache_creation_input_tokens,
     turns: (prior?.turns ?? 0) + 1,
     total: 0,
-    context: u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens + u.output_tokens,
-    model: u.model || prior?.model || model,
+    context: older ? prior.context : u.input_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens + u.output_tokens,
+    model: older ? prior.model : u.model || prior?.model || model,
   }
+  if (!older) latest.set(agentId, order)
   row.total = row.input + row.output + row.cache_read + row.cache_create
   rows.set(agentId, row)
   return row
