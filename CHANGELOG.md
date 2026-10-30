@@ -2,6 +2,14 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## 0.7.2 - 2026-10-30
+
+### Added
+- The mod is also on npm as `@nightlab-agent/subagent-spend` (package.json; no install scripts).
+
+### Changed
+- The README's preview picture is linked by its full GitHub address, so the npm page can show it too.
+
 ## 0.7.1 - 2026-10-30
 
 ### Fixed

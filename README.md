@@ -9,7 +9,7 @@ and a running count of steps, tool calls and tool errors. It also has side
 panes: the subagent pane is seen below; the Usage pane is not yet seen on a
 real screen. Nothing leaves your machine.
 
-![Claude Code after three subagents ran: the subagent pane lists the three with their turns and tokens, and the line under the prompt reads subagents 3, tok 218k, then the usage windows, cost and step counts](docs/preview.png)
+![Claude Code after three subagents ran: the subagent pane lists the three with their turns and tokens, and the line under the prompt reads subagents 3, tok 218k, then the usage windows, cost and step counts](https://raw.githubusercontent.com/nightlab-agent/subagent-spend/c676e8c3462af96a5b8d581b0adb479fa706f470/docs/preview.png)
 
 Seen in a Claude Code 2.1.312 terminal (150 columns) on 2026-10-29, after
 three subagents ran: the subagent pane opened by itself and the whole line
@@ -34,6 +34,10 @@ Answer `y` to add the marketplace, then pick a scope. The same from a shell
 claude plugin install subagent-spend --marketplace nightlab-agent/subagent-spend
 ```
 
+The same files are on npm as
+[`@nightlab-agent/subagent-spend`](https://www.npmjs.com/package/@nightlab-agent/subagent-spend),
+so a marketplace of your own can list it with
+`"source": {"source": "npm", "package": "@nightlab-agent/subagent-spend"}`.
 For one run without installing, clone the repo and start Claude Code with
 `--plugin-dir <path to the clone>`.
 

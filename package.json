@@ -1,0 +1,34 @@
+{
+  "name": "@nightlab-agent/subagent-spend",
+  "version": "0.7.2",
+  "description": "Claude Code mod: per-subagent tokens, rate-limit windows, context fill, cost, steps, tool calls and tool errors of a session, in a notice under the prompt, local files and panes.",
+  "keywords": [
+    "claude-code",
+    "claude-code-mod",
+    "claude-code-plugin",
+    "subagents",
+    "token-usage",
+    "rate-limits",
+    "statusline"
+  ],
+  "homepage": "https://github.com/nightlab-agent/subagent-spend#readme",
+  "bugs": "https://github.com/nightlab-agent/subagent-spend/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nightlab-agent/subagent-spend"
+  },
+  "license": "MIT",
+  "author": "Nightlab",
+  "files": [
+    ".claude-plugin/",
+    "hooks/hooks.json",
+    "hooks/register.tsx",
+    "hooks/spend.ts",
+    "hooks/turns.ts",
+    "hooks/usage.ts",
+    "types/",
+    "kit/",
+    "subagent_spend.py",
+    "CHANGELOG.md"
+  ]
+}
