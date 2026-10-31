@@ -20,7 +20,8 @@
     "usage",
     "headless",
     "max-turns",
-    "budget"
+    "budget",
+    "spend-cap"
   ],
   "userConfig": {
     "dir": {
@@ -52,6 +53,12 @@
       "title": "Turn counts folder",
       "description": "Folder for the day's counts file. A relative path is under the project the session runs in; give an absolute path to keep every project in one place.",
       "default": ".turn-tally"
+    },
+    "capUsd": {
+      "type": "number",
+      "title": "Spend cap (dollars)",
+      "description": "Stop the session at this cost, by Claude Code's own estimate: at 80 percent a notice, at the cap the next model step is answered by the mod with no request made, until /spend-cap raises or lifts it. 0 is off.",
+      "default": 0
     }
   }
 }

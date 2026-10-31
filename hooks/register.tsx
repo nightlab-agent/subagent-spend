@@ -4,6 +4,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import type { Row, Shown } from '../types'
 import { addStep, count, fmt, latest, nextStep, rowsText, paneLines, rows, spendStatus, types } from './spend'
 import { countCall, localDay, tally, tallyText, turnsStatus } from './turns'
+import { cap, capCommand, capOf, heldText, reached, warnNow } from './cap'
 import { OPEN_AT, bar, fileText, shownOf, shownStatus, usageLines, usageStatus } from './usage'
 
 // subagent-spend, the hooks module: a session's meters in one mod.
@@ -24,8 +25,11 @@ import { OPEN_AT, bar, fileText, shownOf, shownStatus, usageLines, usageStatus }
 // each part keeps its own piece and the line shows the pieces that have a reading, in the
 // order spend | usage | turns.
 //
-// DESIGN NOTE, deliberately narrow: it never denies, never rewrites a request or an event,
-// reads only the events the engine hands it and sends nothing off the machine. A failed
+// - cap (option `capUsd`, off by default): at the cap the next model step is answered by the
+//   mod with no request made (./cap.ts).
+//
+// DESIGN NOTE, deliberately narrow: apart from the cap the user sets, it never denies, never rewrites a
+// request or an event, reads only the events the engine hands it and sends nothing off the machine. A failed
 // write is swallowed (the spend part names it once in the status line): the files are
 // advisory, and a gauge that stops the engine would be worse than no gauge.
 
@@ -130,6 +134,9 @@ function showStatus($: EngineInterface, parts: Parts) {
 
 export const register: Register = (on, options) => {
   const usageOn = options.usageFile !== false
+  cap.usd = capOf(options.capUsd)
+  cap.spent = null
+  cap.warned = false
   const turnsOn = options.turnTally !== false
   const spendDir = String(options.dir || '.subagent-spend')
   const usageDir = String(options.usageFileDir || '.usage-file')
@@ -146,12 +153,15 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     try {
       await $.command.register({ name: 'subagent-spend', description: 'Show what each subagent of this session costs, in a pane' })
+      await $.command.register({ name: 'spend-cap', description: 'Show, set (/spend-cap 5) or lift (/spend-cap off) the spend cap of this session' })
       if (usageOn) await $.command.register({ name: 'usage-file', description: 'Show the rate-limit windows, context and cost of this session, in a pane' })
     } catch {
       // a surface with no commands; the panes still open by themselves
     }
     return next(e)
   })
+
+  on('command.run', { command: 'spend-cap' }, async (_, e) => ({ text: capCommand(e.args ?? '') }))
 
   on('command.run', { command: 'subagent-spend' }, async $ => {
     await $.ui.open({ id: SPEND_PANE, title: SPEND_TITLE })
@@ -231,6 +241,9 @@ export const register: Register = (on, options) => {
 
   on('session.end', async ($, e, next) => {
     startOver(e.sessionId)
+    // the next session's first measurement brings its own cost; the cap the user set stays
+    cap.spent = null
+    cap.warned = false
     parts.spend = undefined
     // cost and context belong to the session left: the panes and the line wait for the new one's first reading
     parts.usage = undefined
@@ -245,6 +258,15 @@ export const register: Register = (on, options) => {
   })
 
   on('session.measure', async ($, e, next) => {
+    if (e.cost) cap.spent = e.cost.usd
+    const warning = warnNow()
+    if (warning) {
+      try {
+        $.ui.toast(warning)
+      } catch {
+        // a surface with no toasts: the cap still holds
+      }
+    }
     if (!usageOn) return next(e)
     const mine = ++seq
     parts.usage = usageStatus(e)
@@ -277,6 +299,13 @@ export const register: Register = (on, options) => {
   })
 
   on('turn.step', async function* ($, e, next) {
+    if (reached()) {
+      // answered here, no request made: the turn (or the subagent) ends on this text
+      const text = heldText()
+      yield { kind: 'text' as const, index: 0, text }
+      yield { kind: 'stop' as const, stopReason: 'end_turn' as const, usage: null }
+      return { turnId: e.turnId, index: e.index, answer: text, toolUses: [], stopReason: 'end_turn' as const, usage: null }
+    }
     if (!e.agentId) {
       if (!turnsOn) return yield* next(e)
       // A main-loop step: counted as it starts, its file named and filled before any wait, so an

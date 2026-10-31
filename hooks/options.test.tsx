@@ -65,10 +65,10 @@ test('with usageFile off a measurement passes through untouched: no file, no sta
   expect(statuses.length).toBe(0)
   expect(opens.length).toBe(0)
   await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
-  expect(named).toEqual(['subagent-spend'])
+  expect(named).toEqual(['subagent-spend', 'spend-cap'])
 })
 
-test('control: with usageFile on, session start registers both commands', async ($, on) => {
+test('control: with usageFile on, session start registers all three commands', async ($, on) => {
   world(on)
   const named: string[] = []
   on('command.register', (_, e) => {
@@ -77,7 +77,7 @@ test('control: with usageFile on, session start registers both commands', async 
   })
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   await $.session.start({ cwd: '/p', surface: 'terminal', isInteractive: true })
-  expect(named).toEqual(['subagent-spend', 'usage-file'])
+  expect(named).toEqual(['subagent-spend', 'spend-cap', 'usage-file'])
 })
 
 test('with turnTally off a main step and a tool call pass through untouched and nothing is counted; subagent rows go on', { options: { turnTally: false } }, async ($, on) => {
