@@ -2,6 +2,15 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## 0.7.3 - 2026-10-31
+
+### Fixed
+- The pane read "1 subagents" and "1 turns" when there was one; it now reads "1 subagent" and "1 turn". Three tests
+  had the old wording written into them and now expect the singular; one new test checks one and two of each.
+
+### Changed
+- The README says the pane was seen updating step by step on a screen (a preview recording on 2026-10-31).
+
 ## 0.7.2 - 2026-10-30
 
 ### Added

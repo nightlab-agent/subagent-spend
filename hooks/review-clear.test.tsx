@@ -83,8 +83,8 @@ test('review comparison: /clear then a subagent step, the spend pane lists only 
   await clear($, sid, 'rv3-new')
   await step($, 0, 'rv3-n')
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /subagents, / }))?.text).toBe('1 subagents, 15 tokens')
-  expect((await ui.findAll({ type: 'Text', text: / turns / })).map(t => t.text.split('  ')[1])).toEqual(['rv3-n'])
+  expect((await ui.find({ type: 'Text', text: /subagents?, / }))?.text).toBe('1 subagent, 15 tokens')
+  expect((await ui.findAll({ type: 'Text', text: / turns? / })).map(t => t.text.split('  ')[1])).toEqual(['rv3-n'])
   await ui.unmount()
 })
 

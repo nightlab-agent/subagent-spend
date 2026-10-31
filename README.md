@@ -120,8 +120,8 @@ preview showed, after one turn with one subagent:
 
 **Subagent spend.** For each subagent: model turns (one request each), and
 the input, output, cache-read and cache-creation tokens the API reported for
-each of its steps, summed as the steps happen (the pane updating step by
-step is not yet seen on a real screen). `context` is the last step's
+each of its steps, summed as the steps happen (seen in a terminal preview recording on
+2026-10-31: three subagents' total climbing from 66k to 209k tokens as they ran). `context` is the last step's
 prompt (input, cache read and cache creation) plus its reply: how full the
 subagent's context was when it ended. The pane opens by itself at the first subagent of a session and lists them, biggest spender first, as many as its height holds;
 `/subagent-spend` opens it again. An agent id is shown by its first six

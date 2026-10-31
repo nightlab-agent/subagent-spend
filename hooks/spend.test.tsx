@@ -182,12 +182,27 @@ test('the pane lists every agent, biggest spender first, on every surface', asyn
 
   for (const surface of ['terminal', 'desktop', 'vscode', 'mobile'] as const) {
     const ui = await $.ui.mount({ ...PANE, surface })
-    const head = await ui.find({ type: 'Text', text: /subagents, / })
-    expect(head?.text).toMatch(/^\d+ subagents, \d+k tokens$/)
+    const head = await ui.find({ type: 'Text', text: /subagents?, / })
+    expect(head?.text).toBe('1 subagent, 1804k tokens')
     const rows = await ui.findAll({ type: 'Text', text: / turns / })
     expect(rows[0]?.text).toBe('agent  agent-  2 turns  1804k (out 4000, ctx 902k)  claude-haiku-5-5')
     await ui.unmount()
   }
+})
+
+test('one agent with one step reads 1 subagent and 1 turn; a second agent and step read 2 subagents and 2 turns', async ($, on) => {
+  world(on, () => usage(1000, 20, 0, 0))
+  await step($, 1, 'agent-one')
+  let ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /subagents?, / }))?.text).toBe('1 subagent, 1020 tokens')
+  expect((await ui.find({ type: 'Text', text: / turns? / }))?.text).toContain('  1 turn  ')
+  await ui.unmount()
+  await step($, 2, 'agent-one')
+  await step($, 3, 'agent-two')
+  ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /subagents?, / }))?.text).toBe('2 subagents, 3060 tokens')
+  expect((await ui.findAll({ type: 'Text', text: / turns? / })).map(t => (t.text ?? '').split('  ')[2])).toEqual(['2 turns', '1 turn'])
+  await ui.unmount()
 })
 
 test('the command opens the pane and answers with the running total', async ($, on) => {

@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Row, Shown } from '../types'
-import { addStep, fmt, latest, nextStep, rowsText, paneLines, rows, spendStatus, types } from './spend'
+import { addStep, count, fmt, latest, nextStep, rowsText, paneLines, rows, spendStatus, types } from './spend'
 import { countCall, localDay, tally, tallyText, turnsStatus } from './turns'
 import { OPEN_AT, bar, fileText, shownOf, shownStatus, usageLines, usageStatus } from './usage'
 
@@ -174,7 +174,7 @@ export const register: Register = (on, options) => {
     return (
       <Box flexDirection="column">
         <Text bold>
-          {list.length} subagents, {fmt(tok)} tokens
+          {count(list.length, 'subagent')}, {fmt(tok)} tokens
         </Text>
         {list.length === 0 && <Text dimColor>No subagent has run in this session yet.</Text>}
         {paneLines(list)

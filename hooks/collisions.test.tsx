@@ -159,7 +159,7 @@ test('look-alikes: ids that share a start or an end stay apart, a type is never 
   expect(rows.find(r => r.agent_id === 'agent-0001')!.agent_type).toBe('Explore')
   expect(rows.find(r => r.agent_id === 'agent-0001-x')!.agent_type).toBe('')
   const ui = await $.ui.mount(PANE)
-  const shown = (await ui.findAll({ type: 'Text', text: / turns / })).map(t => (t.text ?? '').split('  ')[1])
+  const shown = (await ui.findAll({ type: 'Text', text: / turns? / })).map(t => (t.text ?? '').split('  ')[1])
   expect(shown.length).toBe(5)
   expect(new Set(shown).size).toBe(5)
   // each label is a whole id, or the start of exactly one id

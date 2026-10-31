@@ -89,10 +89,13 @@ export const label = (id: string, all: readonly string[]) => {
   return id
 }
 
+/** `1 turn`, `2 turns`: a count with its word, singular for one. */
+export const count = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+
 /** The pane's lines, biggest spender first: `Explore  a1b2c3  8 turns  41k (out 2104, ctx 24k)  claude-opus-5-5`. */
 export const paneLines = (list: Row[]) => {
   const ids = list.map(r => r.agent_id)
   return [...list]
     .sort((a, b) => b.total - a.total)
-    .map(r => `${r.agent_type || 'agent'}  ${label(r.agent_id, ids)}  ${r.turns} turns  ${fmt(r.total)} (out ${fmt(r.output)}, ctx ${fmt(r.context ?? 0)})  ${r.model}`)
+    .map(r => `${r.agent_type || 'agent'}  ${label(r.agent_id, ids)}  ${count(r.turns, 'turn')}  ${fmt(r.total)} (out ${fmt(r.output)}, ctx ${fmt(r.context ?? 0)})  ${r.model}`)
 }
