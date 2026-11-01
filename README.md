@@ -127,10 +127,13 @@ the main conversation's or a subagent's, is answered by the mod and no request
 goes out, until you raise it (`/spend-cap 5`) or lift it (`/spend-cap off`)
 for the session. `/spend-cap` alone shows the cap and the cost so far.
 
-![Claude Code with a $0.05 cap: the first prompt is answered; at the second, the reply is the mod's line saying the session cost $0.06 of the $0.05 cap and no request was sent](https://raw.githubusercontent.com/nightlab-agent/subagent-spend/2217a41e9ffa0691e683b6e42b64b0e9daa9a4a2/docs/spend-cap.png)
+![Claude Code with a $0.10 cap: asked to read every file and describe each, Claude reads four files; the next step is answered by the mod's line saying the session cost $0.11 of the $0.10 cap and no request was sent](https://raw.githubusercontent.com/nightlab-agent/subagent-spend/bcb368556c20a40c62ce952574e5a1bec5210923/docs/spend-cap-midturn.png)
 
 Seen in a Claude Code 2.1.312 terminal on 2026-10-31 with the cap set to
-$0.05: the first prompt cost $0.06, and the second got the line above in
+$0.10: one prompt asked Claude to read every file and describe each; after
+it had read four files the cost was $0.11, and the next step, inside the
+same turn, got the line above instead of a request. In an earlier run with
+a $0.05 cap, the first prompt cost $0.06 and the second got the same line in
 0 seconds, with no tool call. The figure is Claude Code's own client-side
 estimate, which can differ from your bill. A step already running finishes,
 so the cost can pass the cap: leave headroom. The 80 percent notice is
