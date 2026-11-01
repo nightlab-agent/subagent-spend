@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, SessionMeasureInput } from 'claude-code'
 
 import type { Row, Shown } from '../types'
 import { addStep, count, fmt, latest, nextStep, rowsText, paneLines, rows, spendStatus, types } from './spend'
@@ -149,6 +149,8 @@ export const register: Register = (on, options) => {
   let spendWarned = false
   // Numbers each measurement in the order the engine raised them; latest.json is written from the newest.
   let seq = 0
+  /** The last measurement, whose windows and context the status line keeps between measurements. */
+  let measured: SessionMeasureInput | undefined
 
   on('session.start', async ($, e, next) => {
     try {
@@ -247,6 +249,7 @@ export const register: Register = (on, options) => {
     parts.spend = undefined
     // cost and context belong to the session left: the panes and the line wait for the new one's first reading
     parts.usage = undefined
+    measured = undefined
     showStatus($, parts)
     try {
       await update($, shownRows, () => [])
@@ -269,6 +272,7 @@ export const register: Register = (on, options) => {
     }
     if (!usageOn) return next(e)
     const mine = ++seq
+    measured = e
     parts.usage = usageStatus(e)
     showStatus($, parts)
     try {
@@ -305,6 +309,11 @@ export const register: Register = (on, options) => {
       try {
         const usage = await $.session.usage()
         if (usage.cost) cap.spent = usage.cost.usd
+        if (usage.cost && usageOn && measured) {
+          // the line's dollar figure is the one the cap holds on, not the last turn's
+          parts.usage = usageStatus(measured, usage.cost.usd)
+          showStatus($, parts)
+        }
       } catch {
         // no cost here: the last measurement stands
       }

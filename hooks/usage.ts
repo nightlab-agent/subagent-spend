@@ -61,10 +61,12 @@ export const fileText = (e: SessionMeasureInput, session: string, now: Date) =>
   ) + '\n'
 
 /** The status line part: only the figures that have a reading; undefined when none has. */
-export const usageStatus = (e: SessionMeasureInput) => {
+export const usageStatus = (e: SessionMeasureInput, usd?: number) => {
   const parts = e.rateLimits.map(w => `${LABEL[w.kind] ?? w.kind} ${w.percentUsed}%`)
   if (e.context.percent !== undefined) parts.push(`ctx ${e.context.percent}%`)
-  if (e.cost) parts.push(`$${e.cost.usd.toFixed(2)}`)
+  // `usd`: a cost read since that measurement (before a step, for the cap) replaces its figure
+  const shown = usd ?? e.cost?.usd
+  if (shown !== undefined) parts.push(`$${shown.toFixed(2)}`)
   return parts.length ? parts.join(' | ') : undefined
 }
 

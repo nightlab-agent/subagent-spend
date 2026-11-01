@@ -2,6 +2,13 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## Unreleased
+
+### Fixed
+- With a spend cap on, the status line's cost now moves inside a turn. The cap reads the cost before each step,
+  but the line took its dollar figure only from the measurement after a turn, so during a long tool loop it could
+  read `$0.00` while the cap had counted `$0.11`. It now shows the figure the cap holds on.
+
 ## 0.8.0 - 2026-11-01
 
 ### Added
