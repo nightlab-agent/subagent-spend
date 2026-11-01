@@ -2,6 +2,16 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## 0.8.0 - 2026-11-01
+
+### Added
+- A spend cap for interactive sessions (`capUsd`, off by default). Claude Code's own `--max-budget-usd` works only
+  in print mode (`claude -p`). At 80 percent of the cap a notice says so, once. At the cap, the next model step
+  (the main conversation's or a subagent's) is answered by the mod and no request goes out, until `/spend-cap`
+  raises the cap (`/spend-cap 5`) or lifts it (`/spend-cap off`). A step already running finishes, so its cost can
+  pass the cap. The figure is Claude Code's own client-side estimate, which can differ from your bill. Eight tests;
+  with the hold taken out, five of them fail.
+
 ## 0.7.3 - 2026-10-31
 
 ### Fixed

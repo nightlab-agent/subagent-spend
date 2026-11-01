@@ -5,7 +5,8 @@ Claude Code meters: subagent tokens, usage limits and turn counts.
 This mod (a plugin that adds behaviour to Claude Code) shows three things in
 one line under the prompt and writes each to a small local file a script can
 read: the tokens each subagent used, summed per subagent; the usage limits;
-and a running count of steps, tool calls and tool errors. It also has side
+and a running count of steps, tool calls and tool errors. If you set one, a
+spend cap stops an interactive session at that cost. It also has side
 panes: the subagent pane is seen below; the Usage pane is not yet seen on a
 real screen. Nothing leaves your machine.
 
@@ -116,6 +117,25 @@ preview showed, after one turn with one subagent:
 ⚠ subagent-spend: subagents 1 | tok 18k (out 1068) | 5h 49% | 7d 26% | ctx 4% | $0.17 | steps 3 | tools 1 | errors …
 ```
 
+## Spend cap
+
+Claude Code's own cap, `--max-budget-usd`, works only in print mode
+(`claude -p`, per its [CLI reference](https://code.claude.com/docs/en/cli-reference)).
+For an interactive session, set `capUsd` in `/config` to a number of dollars.
+At 80 percent of it a notice says so, once. At the cap, the next model step,
+the main conversation's or a subagent's, is answered by the mod and no request
+goes out, until you raise it (`/spend-cap 5`) or lift it (`/spend-cap off`)
+for the session. `/spend-cap` alone shows the cap and the cost so far.
+
+![Claude Code with a $0.05 cap: the first prompt is answered; at the second, the reply is the mod's line saying the session cost $0.06 of the $0.05 cap and no request was sent](https://raw.githubusercontent.com/nightlab-agent/subagent-spend/2217a41e9ffa0691e683b6e42b64b0e9daa9a4a2/docs/spend-cap.png)
+
+Seen in a Claude Code 2.1.312 terminal on 2026-10-31 with the cap set to
+$0.05: the first prompt cost $0.06, and the second got the line above in
+0 seconds, with no tool call. The figure is Claude Code's own client-side
+estimate, which can differ from your bill. A step already running finishes,
+so the cost can pass the cap: leave headroom. The 80 percent notice is
+tested, not yet seen on a screen.
+
 ## What each part shows
 
 **Subagent spend.** For each subagent: model turns (one request each), and
@@ -162,6 +182,7 @@ Set them in `/config`.
 | `usageFileDir` | `.usage-file` | Folder for `latest.json`. |
 | `turnTally` | on | The turn counts. Off: nothing is counted, no counts in the status line, no day file. |
 | `turnTallyDir` | `.turn-tally` | Folder for the day files. |
+| `capUsd` | 0 (off) | The spend cap in dollars (see Spend cap). |
 
 A relative folder is under the project the session runs in; an absolute
 path keeps every project's files in one place. An option that is off
@@ -269,19 +290,20 @@ environment variable. Everything stays on your machine.
 
 | Hook | What it does | What it changes |
 |---|---|---|
-| `session.start` | Registers `/subagent-spend`, and `/usage-file` when the usage part is on. | Nothing. |
-| `command.run` | Opens the pane the command names. | Nothing. |
+| `session.start` | Registers `/subagent-spend` and `/spend-cap`, and `/usage-file` when the usage part is on. | Nothing. |
+| `command.run` | Opens the pane the command names; `/spend-cap` shows, sets or lifts the cap for the session. | Nothing. |
 | `ui.render` (its own panes) | Draws the subagent rows, or the usage bars, from memory. | Nothing. |
 | `agent.spawn` | Notes the subagent's type; opens the spend pane at the first one. | Nothing: the spawn goes on as asked, even if the mod fails. |
 | `tool.call` | Counts the call, and whether it came back as an error (turn counts). | Nothing: the call runs as asked and its result passes through. |
-| `session.measure` | Updates the usage figures, the status line and `latest.json`; opens the Usage pane once at 80 percent. | Nothing: the event passes through untouched. |
+| `session.measure` | Updates the usage figures, the status line and `latest.json`; opens the Usage pane once at 80 percent; notes the cost for the spend cap and shows its 80 percent notice. | Nothing: the event passes through untouched. |
 | `session.end` | At a `/clear` or a resume: the subagent rows, the panes' one-time opening and `/subagent-spend` start over for the next session. | Nothing: the event passes through untouched. |
-| `turn.step` | Main conversation: counts the step and rewrites the day file. Subagent: adds the step's tokens to its row and rewrites the rows file. | Nothing: the request and the response pass through untouched. |
+| `turn.step` | Main conversation: counts the step and rewrites the day file. Subagent: adds the step's tokens to its row and rewrites the rows file. | Nothing, unless a spend cap you set is reached: then the step is answered with the cap's line and no request goes out. |
 
 ## What it does not do
 
 No dollars per subagent (plans have no price per token; use the counts).
-No cloud or remote sessions. It never denies or rewrites a request, and it
+No cloud or remote sessions. Apart from a spend cap you set, it never denies or
+rewrites a request, and it
 does not poll: with no event from Claude Code there is no write. It keeps no
 history beyond the files it leaves, and it does not say which model a usage
 window is for; Claude Code reports the windows as the account's.

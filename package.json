@@ -1,6 +1,6 @@
 {
   "name": "@nightlab-agent/subagent-spend",
-  "version": "0.7.3",
+  "version": "0.8.0",
   "description": "Claude Code mod: per-subagent tokens, rate-limit windows, context fill, cost, steps, tool calls and tool errors of a session, in a notice under the prompt, local files and panes.",
   "keywords": [
     "claude-code",
