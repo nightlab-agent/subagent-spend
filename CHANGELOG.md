@@ -11,8 +11,8 @@ The form is Keep a Changelog; versions follow SemVer.
 - With a spend cap on, a cost reading that comes back late no longer brings back an older, lower figure. When
   two subagents step at once, the read that began first can answer last; it set the cap's count back below the
   cap, so that step went ahead after the cap was reached, and the status line went back to the older cost. A
-  reading older than the last one used is now dropped, and a read still out when a session ends does not land in
-  the next one.
+  session's cost only grows, so the highest reading is kept: a late, lower one is ignored, and a read still out
+  when a session ends does not land in the next one.
 
 ## 0.8.0 - 2026-11-01
 

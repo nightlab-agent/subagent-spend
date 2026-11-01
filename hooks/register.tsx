@@ -151,10 +151,10 @@ export const register: Register = (on, options) => {
   let seq = 0
   /** The last measurement, whose windows and context the status line keeps between measurements. */
   let measured: SessionMeasureInput | undefined
-  // Cost readings (a measurement, or a read before a step) take a number as they begin; one that
-  // ends after a newer one was applied is dropped, so a late, lower figure never comes back.
-  let costOrder = 0
-  let costApplied = 0
+  // A session's cost only grows (SessionCost: summed over every priced response), so the highest
+  // reading is the newest: a read that answers late with a lower figure never brings it back. Each
+  // session end starts a new count, and a read still out for the session left is dropped.
+  let costSession = 0
 
   on('session.start', async ($, e, next) => {
     try {
@@ -250,8 +250,7 @@ export const register: Register = (on, options) => {
     // the next session's first measurement brings its own cost; the cap the user set stays
     cap.spent = null
     cap.warned = false
-    // a read still out for the session left must not land in the next one
-    costApplied = ++costOrder
+    costSession++
     parts.spend = undefined
     // cost and context belong to the session left: the panes and the line wait for the new one's first reading
     parts.usage = undefined
@@ -267,10 +266,7 @@ export const register: Register = (on, options) => {
   })
 
   on('session.measure', async ($, e, next) => {
-    if (e.cost) {
-      cap.spent = e.cost.usd
-      costApplied = ++costOrder
-    }
+    if (e.cost) cap.spent = Math.max(cap.spent ?? 0, e.cost.usd)
     const warning = warnNow()
     if (warning) {
       try {
@@ -315,16 +311,14 @@ export const register: Register = (on, options) => {
     if (cap.usd !== null) {
       // session.measure comes after a turn, not after each step: a tool loop or a subagent inside one
       // turn is held only if the cost is read here, before each step
-      const mine = ++costOrder
+      const session = costSession
       try {
         const usage = await $.session.usage()
-        if (usage.cost && mine > costApplied) {
-          costApplied = mine
-          cap.spent = usage.cost.usd
-        }
-        if (usage.cost && mine === costApplied && usageOn && measured) {
+        const usd = session === costSession ? usage.cost?.usd : undefined
+        if (usd !== undefined && usd >= (cap.spent ?? 0)) cap.spent = usd
+        if (usd !== undefined && usd === cap.spent && usageOn && measured) {
           // the line's dollar figure is the one the cap holds on, not the last turn's
-          parts.usage = usageStatus(measured, usage.cost.usd)
+          parts.usage = usageStatus(measured, usd)
           showStatus($, parts)
         }
       } catch {
