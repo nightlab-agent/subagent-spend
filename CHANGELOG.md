@@ -10,7 +10,8 @@ The form is Keep a Changelog; versions follow SemVer.
   (the main conversation's or a subagent's) is answered by the mod and no request goes out, until `/spend-cap`
   raises the cap (`/spend-cap 5`) or lifts it (`/spend-cap off`). A step already running finishes, so its cost can
   pass the cap. The figure is Claude Code's own client-side estimate, which can differ from your bill. Eight tests;
-  with the hold taken out, five of them fail.
+  with the hold taken out, five of them fail. The cost is read before every step, not only after a turn, so a
+  tool loop or a subagent inside one turn is held too (two more tests, each beside a comparison case).
 
 ## 0.7.3 - 2026-10-31
 

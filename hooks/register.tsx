@@ -299,6 +299,16 @@ export const register: Register = (on, options) => {
   })
 
   on('turn.step', async function* ($, e, next) {
+    if (cap.usd !== null) {
+      // session.measure comes after a turn, not after each step: a tool loop or a subagent inside one
+      // turn is held only if the cost is read here, before each step
+      try {
+        const usage = await $.session.usage()
+        if (usage.cost) cap.spent = usage.cost.usd
+      } catch {
+        // no cost here: the last measurement stands
+      }
+    }
     if (reached()) {
       // answered here, no request made: the turn (or the subagent) ends on this text
       const text = heldText()
