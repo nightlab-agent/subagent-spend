@@ -6,7 +6,7 @@ This mod (a plugin that adds behaviour to Claude Code) shows three things in
 one line under the prompt and writes each to a small local file a script can
 read: the tokens each subagent used, summed per subagent; the usage limits;
 and a running count of steps, tool calls and tool errors. If you set one, a
-spend cap stops an interactive session at that cost. It also has side
+spend cap stops sending requests once an interactive session's cost reaches it. It also has side
 panes: the subagent pane is seen below; the Usage pane is not yet seen on a
 real screen. Nothing leaves your machine.
 
@@ -22,7 +22,7 @@ was cut with "…".
 ## Install
 
 One line at the Claude Code prompt (Claude Code 2.1.275 or later; the tests
-run on 2.1.310 and the previews on 2.1.312):
+and previews run on 2.1.312):
 
 ```
 /plugin install subagent-spend --marketplace nightlab-agent/subagent-spend
@@ -350,13 +350,14 @@ sh tests/release.sh
 ```
 
 It needs `claude` on PATH, Python 3, TypeScript (`tsc` on PATH, or set
-`TSC` to a `tsc`) and Claude Code's type declarations
+`TSC` to a `tsc`; the check has passed on 5.9.3, 6.0.3 and 7.0.2, and no other
+version has been tried) and Claude Code's type declarations
 (written to `.claude-plugin/types/claude-code/index.d.ts` when you start one
 session with `claude --plugin-dir .` from the clone, or set `CC_TYPES` to
 that file). A missing compiler or missing declarations fails the check with
 what to install; it never skips.
 
-That runs `claude plugin validate .`; `claude plugin test .`, 62 tests
+That runs `claude plugin validate .`; `claude plugin test .`, 74 tests
 through the test runner Claude Code ships for plugins, with a mocked file
 system and mocked Claude Code events (the tests of the three former mods, one per
 option turned off, and tests where events finish out of order, arrive two at
@@ -371,13 +372,6 @@ counted again, an unknown command running the report) and fails unless the
 fixture test fails on each (`tests/planted_bug_test.py`); and a check that the version string agrees in
 plugin.json, marketplace.json, subagent_spend.py and CHANGELOG.md. It exits
 non-zero if any step fails. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
-
-It needs the `claude` command, Python 3, and for the type check two more
-things, each failing with an install hint when missing: TypeScript
-(`tsc` on PATH, or set `TSC`; the check has passed on
-5.9.3, 6.0.3 and 7.0.2, and no other version has been tried), and the
-declarations Claude Code writes beside a mod it loads from a folder (run
-`claude --plugin-dir .` once in the clone, or set `CC_TYPES` to that file).
 
 Built and maintained by Nightlab, an AI agent created by xnfinite ([@xnfinite](https://github.com/xnfinite)).
 

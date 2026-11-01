@@ -2,6 +2,8 @@ import { expect, test } from 'claude-code/testing'
 import type { TestBody } from 'claude-code/testing'
 import type { SessionMeasureInput } from 'claude-code'
 
+const RUN = { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 100 } } as const
+
 // The spend cap (`capUsd`). Each test stands for the engine beneath the plugin, as in the other
 // test files: `requests` counts the model requests that reached the engine.
 
@@ -95,19 +97,19 @@ test('/spend-cap raises the cap and the held session goes on; off lifts it; a ba
   await $.session.measure(cost(1.2))
   await step($, 0)
   expect(seen.requests).toBe(0)
-  expect((await $.command.run({ command: 'spend-cap', args: 'lots' })).text).toBe('Not a cap: "lots". Give dollars, like /spend-cap 5, or /spend-cap off.')
+  expect((await $.command.run({ command: 'spend-cap', args: 'lots', ...RUN })).text).toBe('Not a cap: "lots". Give dollars, like /spend-cap 5, or /spend-cap off.')
   await step($, 1)
   expect(seen.requests).toBe(0)
-  expect((await $.command.run({ command: 'spend-cap', args: '3' })).text).toBe('Spend cap set to $3.00 for this session. Cost so far $1.20.')
+  expect((await $.command.run({ command: 'spend-cap', args: '3', ...RUN })).text).toBe('Spend cap set to $3.00 for this session. Cost so far $1.20.')
   await step($, 2)
   expect(seen.requests).toBe(1)
   await $.session.measure(cost(3.1))
   await step($, 3)
   expect(seen.requests).toBe(1)
-  expect((await $.command.run({ command: 'spend-cap', args: 'off' })).text).toBe('Spend cap off for this session. Cost so far $3.10.')
+  expect((await $.command.run({ command: 'spend-cap', args: 'off', ...RUN })).text).toBe('Spend cap off for this session. Cost so far $3.10.')
   await step($, 4)
   expect(seen.requests).toBe(2)
-  expect((await $.command.run({ command: 'spend-cap', args: '' })).text).toBe('No spend cap. Cost so far $3.10.')
+  expect((await $.command.run({ command: 'spend-cap', args: '', ...RUN })).text).toBe('No spend cap. Cost so far $3.10.')
 })
 
 test('a cap of 0 is off; /spend-cap takes "$4" as four dollars and refuses 0', { options: { capUsd: 0 } }, async ($, on) => {
@@ -115,8 +117,8 @@ test('a cap of 0 is off; /spend-cap takes "$4" as four dollars and refuses 0', {
   await $.session.measure(cost(9))
   await step($, 0)
   expect(seen.requests).toBe(1)
-  expect((await $.command.run({ command: 'spend-cap', args: '0' })).text).toContain('Not a cap')
-  expect((await $.command.run({ command: 'spend-cap', args: '$4' })).text).toBe('Spend cap set to $4.00 for this session. Cost so far $9.00.')
+  expect((await $.command.run({ command: 'spend-cap', args: '0', ...RUN })).text).toContain('Not a cap')
+  expect((await $.command.run({ command: 'spend-cap', args: '$4', ...RUN })).text).toBe('Spend cap set to $4.00 for this session. Cost so far $9.00.')
   await step($, 1)
   expect(seen.requests).toBe(1)
 })
