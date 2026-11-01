@@ -2,18 +2,6 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
-## Unreleased
-
-### Fixed
-- With a spend cap on, the status line's cost now moves inside a turn. The cap reads the cost before each step,
-  but the line took its dollar figure only from the measurement after a turn, so during a long tool loop it could
-  read `$0.00` while the cap had counted `$0.11`. It now shows the figure the cap holds on.
-- With a spend cap on, a cost reading that comes back late no longer brings back an older, lower figure. When
-  two subagents step at once, the read that began first can answer last; it set the cap's count back below the
-  cap, so that step went ahead after the cap was reached, and the status line went back to the older cost. A
-  session's cost only grows, so the highest reading is kept: a late, lower one is ignored, and a read still out
-  when a session ends does not land in the next one.
-
 ## 0.8.0 - 2026-11-01
 
 ### Added
@@ -24,6 +12,10 @@ The form is Keep a Changelog; versions follow SemVer.
   pass the cap. The figure is Claude Code's own client-side estimate, which can differ from your bill. Eight tests;
   with the hold taken out, five of them fail. The cost is read before every step, not only after a turn, so a
   tool loop or a subagent inside one turn is held too (two more tests, each beside a comparison case).
+- With the cap on, the status line shows the cost the cap holds on, so it moves inside a turn too. When two
+  subagents step at once and a cost reading comes back late, the highest reading in the session is kept: a late,
+  lower one cannot set the count back under the cap, and a read still out when a session ends does not land in
+  the next one.
 
 ## 0.7.3 - 2026-10-31
 
