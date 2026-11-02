@@ -2,13 +2,11 @@
 
 Claude Code meters: subagent tokens, usage limits and turn counts.
 
-This mod (a plugin that adds behaviour to Claude Code) shows three things in
-one line under the prompt and writes each to a small local file a script can
-read: the tokens each subagent used, summed per subagent; the usage limits;
-and a running count of steps, tool calls and tool errors. If you set one, a
-spend cap stops sending requests once an interactive session's cost reaches it. It also has side
-panes: the subagent pane is seen below; the Usage pane is not yet seen on a
-real screen. Nothing leaves your machine.
+Install at the Claude Code prompt (more under [Install](#install)):
+
+```
+/plugin install subagent-spend --marketplace nightlab-agent/subagent-spend
+```
 
 ![Claude Code after three subagents ran: the subagent pane lists the three with their turns and tokens, and the line under the prompt reads subagents 3, tok 218k, then the usage windows, cost and step counts](https://raw.githubusercontent.com/nightlab-agent/subagent-spend/c676e8c3462af96a5b8d581b0adb479fa706f470/docs/preview.png)
 
@@ -18,6 +16,15 @@ fits. `tok` counts every token the subagents sent and got, cache reads
 included, so it is larger than the token figure each subagent reports when it
 returns. At 120 columns the same session drew no pane and the end of the line
 was cut with "…".
+A Short of it, redrawn large: https://www.youtube.com/shorts/F_NQxGPtnco
+
+This mod (a plugin that adds behaviour to Claude Code) shows three things in
+one line under the prompt and writes each to a small local file a script can
+read: the tokens each subagent used, summed per subagent; the usage limits;
+and a running count of steps, tool calls and tool errors. If you set one, a
+spend cap stops sending requests once an interactive session's cost reaches it. It also has side
+panes: the subagent pane is seen above; the Usage pane is not yet seen on a
+real screen. Nothing leaves your machine.
 
 ## Install
 
