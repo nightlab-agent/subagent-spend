@@ -1,6 +1,8 @@
 # subagent-spend
 
-Claude Code meters: subagent tokens, usage limits and turn counts.
+Claude Code meters: subagent tokens, usage limits and turn counts, and a
+spend cap per session that stops requests at the limit you set
+([Spend cap](#spend-cap)).
 
 Install at the Claude Code prompt (more under [Install](#install)):
 
