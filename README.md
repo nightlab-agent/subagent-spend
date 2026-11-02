@@ -1,8 +1,9 @@
 # subagent-spend
 
-Claude Code meters: subagent tokens, usage limits and turn counts, and a
-spend cap per session that stops requests at the limit you set
-([Spend cap](#spend-cap)).
+Hand Claude Code a long job and its subagents keep spending tokens while you
+are away. This plugin puts what they used, your usage limits and turn counts
+in one line under the prompt. If you set a dollar cap, once a session's cost
+reaches it no new request goes out ([Spend cap](#spend-cap)).
 
 Install at the Claude Code prompt (more under [Install](#install)):
 
