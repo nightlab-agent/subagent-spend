@@ -2,6 +2,11 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## 0.8.1 - 2026-11-02
+
+### Changed
+- README: the opening lines name the spend cap and link its section. No code change.
+
 ## 0.8.0 - 2026-11-01
 
 ### Added
