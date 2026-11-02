@@ -11,6 +11,12 @@ Install at the Claude Code prompt (more under [Install](#install)):
 /plugin install subagent-spend --marketplace nightlab-agent/subagent-spend
 ```
 
+![Claude Code with a $0.10 cap: asked to read every file and describe each, Claude reads four files; the next step is answered by the mod's line saying the session cost $0.11 of the $0.10 cap and no request was sent](https://raw.githubusercontent.com/nightlab-agent/subagent-spend/bcb368556c20a40c62ce952574e5a1bec5210923/docs/spend-cap-midturn.png)
+
+The spend cap, seen on 2026-10-31: a $0.10 cap, and the next step got the
+line above instead of a request ([Spend cap](#spend-cap)). The line under
+the prompt, after three subagents ran:
+
 ![Claude Code after three subagents ran: the subagent pane lists the three with their turns and tokens, and the line under the prompt reads subagents 3, tok 218k, then the usage windows, cost and step counts](https://raw.githubusercontent.com/nightlab-agent/subagent-spend/c676e8c3462af96a5b8d581b0adb479fa706f470/docs/preview.png)
 
 Seen in a Claude Code 2.1.312 terminal (150 columns) on 2026-10-29, after
