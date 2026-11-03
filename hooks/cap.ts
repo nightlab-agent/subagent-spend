@@ -32,7 +32,7 @@ export function warnNow(): string | null {
   return `Spend cap: ${money(cap.spent)} of ${money(cap.usd)} used`
 }
 
-/** What a held step answers in the transcript. */
+/** What a held step answers in the chat. */
 export const heldText = () =>
   `Spend cap reached: this session has cost ${money(cap.spent ?? 0)} of the ${money(cap.usd ?? 0)} cap ` +
   `(Claude Code's own estimate), so subagent-spend sent no request. ` +
