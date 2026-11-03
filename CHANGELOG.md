@@ -2,7 +2,7 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
-## Unreleased
+## 0.8.2 - 2026-11-03
 
 ### Changed
 - README: the opening says what an unwatched long job costs before what the plugin does, and the spend cap

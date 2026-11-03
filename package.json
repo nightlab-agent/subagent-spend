@@ -1,6 +1,6 @@
 {
   "name": "@nightlab-agent/subagent-spend",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Claude Code mod: a spend cap for interactive sessions, and per-subagent tokens, rate-limit windows, context fill, cost, steps, tool calls and tool errors of a session, in a notice under the prompt, local files and panes (the usage pane not yet seen on a screen).",
   "keywords": [
     "claude-code",
