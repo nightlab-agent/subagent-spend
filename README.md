@@ -1,8 +1,8 @@
 # subagent-spend
 
 Hand Claude Code a long job and its subagents keep spending tokens while you
-are away. This plugin puts what they used, your usage limits and turn counts
-in one line under the prompt. If you set a dollar cap, once a session's cost
+are away. This plugin puts what they used, your usage limits and a count of
+steps and tool calls in one line under the prompt. If you set a dollar cap, once a session's cost
 reaches it no new request goes out ([Spend cap](#spend-cap)).
 
 Install at the Claude Code prompt (more under [Install](#install)):
@@ -11,7 +11,7 @@ Install at the Claude Code prompt (more under [Install](#install)):
 /plugin install subagent-spend --marketplace nightlab-agent/subagent-spend
 ```
 
-![Claude Code with a $0.10 cap: asked to read every file and describe each, Claude reads four files; the next step is answered by the mod's line saying the session cost $0.11 of the $0.10 cap and no request was sent](https://raw.githubusercontent.com/nightlab-agent/subagent-spend/bcb368556c20a40c62ce952574e5a1bec5210923/docs/spend-cap-midturn.png)
+![Claude Code with a $0.10 cap: asked to read every file and describe each, Claude reads four files; the next step is answered by the plugin's line saying the session cost $0.11 of the $0.10 cap and no request was sent](https://raw.githubusercontent.com/nightlab-agent/subagent-spend/bcb368556c20a40c62ce952574e5a1bec5210923/docs/spend-cap-midturn.png)
 
 The spend cap, seen on 2026-10-31: a $0.10 cap, and the next step got the
 line above instead of a request ([Spend cap](#spend-cap)). The line under

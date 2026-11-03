@@ -2,6 +2,12 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## Unreleased
+
+### Changed
+- README: the opening says what an unwatched long job costs before what the plugin does, and the spend cap
+  picture (seen 2026-10-31) is on the first screen. No code change.
+
 ## 0.8.1 - 2026-11-02
 
 ### Changed
