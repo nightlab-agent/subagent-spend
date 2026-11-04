@@ -2,6 +2,13 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## 0.8.3 - 2026-11-03
+
+### Fixed
+- The npm package left out hooks/cap.ts, which hooks/register.tsx imports, so an install from npm failed to load
+  from 0.8.0 on. The marketplace install was not affected. The checklist now fails when a packed hook imports a
+  file the package leaves out.
+
 ## 0.8.2 - 2026-11-03
 
 ### Changed

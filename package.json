@@ -26,6 +26,7 @@
     ".claude-plugin/",
     "hooks/hooks.json",
     "hooks/register.tsx",
+    "hooks/cap.ts",
     "hooks/spend.ts",
     "hooks/turns.ts",
     "hooks/usage.ts",
