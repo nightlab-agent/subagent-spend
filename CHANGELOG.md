@@ -2,6 +2,9 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## Unreleased
+- The npm description fits the registry's 255 characters; it was cut in the middle of a word.
+
 ## 0.8.3 - 2026-11-03
 
 ### Fixed
