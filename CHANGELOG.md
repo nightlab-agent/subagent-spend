@@ -2,7 +2,7 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
-## 0.8.3 - 2026-11-03
+## Unreleased
 
 ### Fixed
 - The npm package left out hooks/cap.ts, which hooks/register.tsx imports, so an install from npm failed to load
