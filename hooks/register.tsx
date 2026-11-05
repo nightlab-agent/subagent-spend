@@ -30,7 +30,7 @@ import { OPEN_AT, bar, fileText, shownOf, shownStatus, usageLines, usageStatus }
 //
 // DESIGN NOTE, deliberately narrow: apart from the cap the user sets, it never denies, never rewrites a
 // request or an event, reads only the events the engine hands it and sends nothing off the machine. A failed
-// write is swallowed (the spend part names it once in the status line): the files are
+// write is swallowed (the spend part names it in the status line until a write lands): the files are
 // advisory, and a gauge that stops the engine would be worse than no gauge.
 
 const SPEND_PANE = 'subagent-spend'
@@ -90,11 +90,12 @@ const out = (own: boolean): Out => ({ writing: false, owed: false, ignore: !own,
  * top of the newer ones. An event that finds a write in flight marks the file as owed and goes on; the
  * writing one writes again, from the newest content, until nothing is owed. A failed write is made up
  * by the next event. Before each write, when it is missing: `<dir>/.gitignore` holding `*`, so git
- * ignores the folder in every project with no step from the user. */
+ * ignores the folder in every project with no step from the user. True when this call wrote; false when
+ * it left the file to the write in flight, whose result is not known yet. */
 async function writeLatest($: EngineInterface, dir: string, f: Out) {
   if (f.writing) {
     f.owed = true
-    return
+    return false
   }
   f.writing = true
   try {
@@ -114,6 +115,7 @@ async function writeLatest($: EngineInterface, dir: string, f: Out) {
       const n = f.newest
       if (n) await $.fs.write(`${dir}/${n.name}`, n.text())
     } while (f.owed)
+    return true
   } finally {
     f.writing = false
   }
@@ -157,7 +159,8 @@ export const register: Register = (on, options) => {
   const own = (dir: string, name: string) => dir.replace(/[\\/]+$/, '').split(/[\\/]/).at(-1) === name
   const files = { spend: out(own(spendDir, '.subagent-spend')), usage: out(own(usageDir, '.usage-file')), turns: out(own(turnsDir, '.turn-tally')) }
   const parts: Parts = {}
-  let spendWarned = false
+  /** Why the last rows write failed; on the status line in place of the spend figures until one lands. */
+  let spendError: string | undefined
   // Numbers each measurement in the order the engine raised them; latest.json is written from the newest.
   let seq = 0
   /** The last measurement, whose windows and context the status line keeps between measurements. */
@@ -262,6 +265,7 @@ export const register: Register = (on, options) => {
     cap.spent = null
     cap.warned = false
     costSession++
+    spendError = undefined
     parts.spend = undefined
     // cost and context belong to the session left: the panes and the line wait for the new one's first reading
     parts.usage = undefined
@@ -366,23 +370,22 @@ export const register: Register = (on, options) => {
     } catch {
       // the pane misses one redraw; the rows file is the record
     }
-    parts.spend = spendStatus()
+    parts.spend = spendError ?? spendStatus()
     showStatus($, parts)
     try {
       // the text is taken now, not at the write: a /clear while a write waits empties the Map it reads
       const text = rowsText()
       files.spend.newest = { name: `${sessionId || 'no-session'}.jsonl`, text: () => text }
-      await writeLatest($, spendDir, files.spend)
-    } catch (err) {
-      // unwritable folder: say so once, then the session goes on
-      if (!spendWarned) {
-        spendWarned = true
-        try {
-          $.ui.status(`subagent-spend: rows file not written (${err instanceof Error ? err.message : String(err)})`)
-        } catch {
-          // nothing left to tell it on
-        }
+      if ((await writeLatest($, spendDir, files.spend)) && spendError) {
+        spendError = undefined
+        parts.spend = spendStatus()
+        showStatus($, parts)
       }
+    } catch (err) {
+      // unwritable folder: the line says so until a write lands, and the session goes on
+      spendError = `subagent-spend: rows file not written (${err instanceof Error ? err.message : String(err)})`
+      parts.spend = spendError
+      showStatus($, parts)
     }
     return response
   })

@@ -328,9 +328,9 @@ history beyond the files it leaves, and it does not say which model a usage
 window is for; Claude Code reports the windows as the account's.
 
 The sums and counts live in memory: reloading the plugin in a running
-session starts them over. A folder that cannot be written is named once in
-the status line for the subagent rows, and passed over in silence for the
-other two; the session goes on. A subagent step whose response carried no
+session starts them over. A folder that cannot be written is named in the
+status line for the subagent rows, until a write lands or the session ends,
+and passed over in silence for the other two; the session goes on. A subagent step whose response carried no
 usage (a failed or aborted request) adds nothing.
 
 ## Remove it

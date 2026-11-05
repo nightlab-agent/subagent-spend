@@ -136,7 +136,7 @@ test("the agent type from the spawn is carried into the agent's row", async ($, 
   expect(row?.agent_type).toBe('Explore')
 })
 
-test('a failed write does not fail the step and is named once in the status line', async ($, on) => {
+test('a failed write does not fail the step and is named in the status line', async ($, on) => {
   const statuses: (string | undefined)[] = []
   on('fs.write', () => {
     throw new Error('read-only file system')
@@ -153,6 +153,80 @@ test('a failed write does not fail the step and is named once in the status line
   const r = await step($, 6, 'agent-e')
   expect(r.answer).toBe('fine')
   expect(statuses.some(s => (s ?? '').startsWith('subagent-spend: rows file not written'))).toBe(true)
+})
+
+// A rows folder that comes and goes. `hold` keeps every write waiting until it is released.
+const flaky = (on: Parameters<TestBody>[1]) => {
+  const seen = { fail: true, hold: null as Promise<void> | null, writing: 0, statuses: [] as (string | undefined)[] }
+  on('fs.write', async () => {
+    seen.writing++
+    if (seen.hold) await seen.hold
+    if (seen.fail) throw new Error('read-only file system')
+    return { value: undefined }
+  })
+  on('ui.status', (_, e) => {
+    seen.statuses.push(e.text)
+    return { value: undefined }
+  })
+  on('session.id', () => ({ value: 'sess-test' }))
+  on('session.end', (_, e) => ({ sessionId: e.sessionId }))
+  on('turn.step', async function* (_, e) {
+    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: e.agentId ? usage(1, 1, 0, 0) : null }
+  })
+  return seen
+}
+
+const NOTICE = 'rows file not written'
+
+const released = () => {
+  let open = () => {}
+  const hold = new Promise<void>(r => (open = r))
+  return { hold, open }
+}
+
+test('the unwritten rows notice stays through the main loop until a write lands', async ($, on) => {
+  const seen = flaky(on)
+  await step($, 0, 'agent-n1')
+  await step($, 1)
+  expect(seen.statuses.at(-1)).toContain(NOTICE)
+  seen.fail = false
+  await step($, 2, 'agent-n1')
+  expect(seen.statuses.at(-1)).not.toContain(NOTICE)
+  expect(seen.statuses.at(-1)).toContain('subagents')
+})
+
+test('comparison: with writes landing the notice never shows', async ($, on) => {
+  const seen = flaky(on)
+  seen.fail = false
+  await step($, 0, 'agent-n2')
+  await step($, 1)
+  expect(seen.statuses.some(s => (s ?? '').includes(NOTICE))).toBe(false)
+})
+
+test('a step that only queues its write leaves the notice up until the write in flight lands', async ($, on) => {
+  const seen = flaky(on)
+  await step($, 0, 'agent-n3')
+  seen.fail = false
+  const { hold, open } = released()
+  seen.hold = hold
+  seen.writing = 0
+  const first = step($, 1, 'agent-n3')
+  for (let i = 0; i < 100000 && seen.writing === 0; i++) await Promise.resolve()
+  expect(seen.writing).toBeGreaterThan(0)
+  await step($, 2, 'agent-n4') // finds the write in flight, marks it owed, goes on
+  expect(seen.statuses.at(-1)).toContain(NOTICE)
+  open()
+  await first
+  expect(seen.statuses.at(-1)).not.toContain(NOTICE)
+})
+
+test('a /clear takes the notice off; a new failure brings it back', async ($, on) => {
+  const seen = flaky(on)
+  await step($, 0, 'agent-n5')
+  await $.session.end({ sessionId: 'sess-test', reason: 'clear' } as any)
+  expect(seen.statuses.at(-1) ?? '').not.toContain(NOTICE)
+  await step($, 1, 'agent-n6')
+  expect(seen.statuses.at(-1)).toContain(NOTICE)
 })
 
 const PANE = {
