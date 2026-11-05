@@ -98,3 +98,31 @@ test('comparison: a rows write that fails with no /clear puts the notice up', as
   await out
   expect(seen.lines.at(-1) ?? '').toContain('not written')
 })
+
+test('a /clear while a step redraws the pane leaves the session its rows file', async ($, on) => {
+  const seen = world(on)
+  await step($, 0, 'a')
+  const g = gate()
+  seen.redraw = g.hold
+  const out = step($, 1, 'a')
+  await until(() => seen.redrawing)
+  await end($)
+  seen.sid = 'new'
+  g.open()
+  await out
+  const last = seen.writes.filter(w => w.path.endsWith('old.jsonl')).at(-1)!
+  expect(last.text).toContain('"turns":2')
+})
+
+test('comparison: with no /clear the same held redraw writes the step', async ($, on) => {
+  const seen = world(on)
+  await step($, 0, 'a')
+  const g = gate()
+  seen.redraw = g.hold
+  const out = step($, 1, 'a')
+  await until(() => seen.redrawing)
+  g.open()
+  await out
+  const last = seen.writes.filter(w => w.path.endsWith('old.jsonl')).at(-1)!
+  expect(last.text).toContain('"turns":2')
+})

@@ -365,6 +365,10 @@ export const register: Register = (on, options) => {
     // a step whose id came back after its session ended: its rows file is closed
     if (sessionId === null) return response
     addStep(agentId, sessionId, response.usage, e.model, new Date(), order)
+    // the file's content and session are taken now, before any wait: a /clear during one empties the Map
+    const writing = costSession
+    const text = rowsText()
+    files.spend.newest = { name: `${sessionId || 'no-session'}.jsonl`, text: () => text }
     try {
       await update($, shownRows, () => [...rows.values()])
     } catch {
@@ -372,11 +376,7 @@ export const register: Register = (on, options) => {
     }
     parts.spend = spendError ?? spendStatus()
     showStatus($, parts)
-    const writing = costSession
     try {
-      // the text is taken now, not at the write: a /clear while a write waits empties the Map it reads
-      const text = rowsText()
-      files.spend.newest = { name: `${sessionId || 'no-session'}.jsonl`, text: () => text }
       if ((await writeLatest($, spendDir, files.spend)) && spendError) {
         spendError = undefined
         parts.spend = spendStatus()
