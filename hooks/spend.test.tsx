@@ -157,7 +157,7 @@ test('a failed write does not fail the step and is named in the status line', as
 
 // A rows folder that comes and goes. `hold` keeps every write waiting until it is released.
 const flaky = (on: Parameters<TestBody>[1]) => {
-  const seen = { fail: true, hold: null as Promise<void> | null, writing: 0, statuses: [] as (string | undefined)[] }
+  const seen = { fail: true, hold: null as Promise<void> | null, writing: 0, statuses: [] as (string | undefined)[], id: 'sess-test' }
   on('fs.write', async () => {
     seen.writing++
     if (seen.hold) await seen.hold
@@ -168,7 +168,7 @@ const flaky = (on: Parameters<TestBody>[1]) => {
     seen.statuses.push(e.text)
     return { value: undefined }
   })
-  on('session.id', () => ({ value: 'sess-test' }))
+  on('session.id', () => ({ value: seen.id }))
   on('session.end', (_, e) => ({ sessionId: e.sessionId }))
   on('turn.step', async function* (_, e) {
     return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: e.agentId ? usage(1, 1, 0, 0) : null }
@@ -225,6 +225,8 @@ test('a /clear takes the notice off; a new failure brings it back', async ($, on
   await step($, 0, 'agent-n5')
   await $.session.end({ sessionId: 'sess-test', reason: 'clear' } as any)
   expect(seen.statuses.at(-1) ?? '').not.toContain(NOTICE)
+  // the process goes on under a new id (declarations, SessionEndInput)
+  seen.id = 'sess-next'
   await step($, 1, 'agent-n6')
   expect(seen.statuses.at(-1)).toContain(NOTICE)
 })
