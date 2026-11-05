@@ -1,6 +1,8 @@
 import { expect, mock, test } from 'claude-code/testing'
 import type { TestBody } from 'claude-code/testing'
 
+import { untilText } from './usage'
+
 // What the engine stamps on a typed command: the person at the composer.
 const RUN = { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 100 } } as const
 import type { SessionMeasureInput } from 'claude-code'
@@ -251,4 +253,22 @@ test('three measurements at once share one writer, the figures never going back;
   fail = false
   await $.session.measure(measurement({ rateLimits: [{ kind: 'five_hour', percentUsed: 90 }] }))
   expect(parsed(writes.filter(w => w.path.endsWith('/latest.json')).at(-1)!).rateLimits[0].percentUsed).toBe(90)
+})
+
+test('under a minute to a reset the pane says so, not 0h 00m', async ($, on) => {
+  world(on)
+  const soon = new Date(Date.now() + 30000).toISOString()
+  await $.session.measure(measurement({ rateLimits: [{ kind: 'five_hour', percentUsed: 99, resetsAt: soon }] }))
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /^5-hour/ }))?.text).toBe('5-hour      ██████████  99%  resets in <1m')
+  await ui.unmount()
+})
+
+test('the edges of the last minute: past, one millisecond left, one left under a minute, a whole minute', () => {
+  const now = new Date('2026-11-04T12:00:00.000Z')
+  const at = (ms: number) => new Date(now.getTime() + ms).toISOString()
+  expect(untilText(at(0), now)).toBe('now')
+  expect(untilText(at(1), now)).toBe('<1m')
+  expect(untilText(at(59999), now)).toBe('<1m')
+  expect(untilText(at(60000), now)).toBe('0h 01m')
 })

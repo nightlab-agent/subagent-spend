@@ -19,13 +19,14 @@ export const bar = (pct: number) => {
   return '█'.repeat(full) + '░'.repeat(10 - full)
 }
 
-/** Time left to a reset: `2h 05m`, `3d 4h`, `now`; empty when the engine gave no reset time. */
+/** Time left to a reset: `2h 05m`, `3d 4h`, `<1m`, `now`; empty when the engine gave no reset time. */
 export const untilText = (resetsAt: string | null, now: Date) => {
   if (!resetsAt) return ''
   const ms = Date.parse(resetsAt) - now.getTime()
   if (Number.isNaN(ms)) return ''
   if (ms <= 0) return 'now'
   const min = Math.floor(ms / 60000)
+  if (min === 0) return '<1m'
   if (min >= 2880) return `${Math.floor(min / 1440)}d ${Math.floor((min % 1440) / 60)}h`
   return `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, '0')}m`
 }
