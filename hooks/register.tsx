@@ -176,7 +176,7 @@ export const register: Register = (on, options) => {
   let leftStart: number | null = null
   /** Whether a usage read made while `costSession` stood at `session` belongs to a session already left. */
   const ofLeft = (session: number, usage: SessionUsage) => session !== costSession || usage.startedAt === leftStart
-  /** The next cost reading is the new session's. The first one comes with its first measurement; the cap the user set stays. */
+  /** The next cost reading is the new session's; the cap the user set stays. */
   const startCost = () => {
     cap.spent = null
     cap.warned = false

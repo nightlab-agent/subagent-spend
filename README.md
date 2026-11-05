@@ -312,7 +312,7 @@ environment variable. Everything stays on your machine.
 
 | Hook | What it does | What it changes |
 |---|---|---|
-| `session.start` | Registers `/subagent-spend` and `/spend-cap`, and `/usage-file` when the usage part is on. | Nothing. |
+| `session.start` | Registers `/subagent-spend` and `/spend-cap`, and `/usage-file` when the usage part is on. After a reload, puts back what `/spend-cap` set. | Nothing. |
 | `command.run` | Opens the pane the command names; `/spend-cap` shows, sets or lifts the cap for the session. | Nothing. |
 | `ui.render` (its own panes) | Draws the subagent rows, or the usage bars, from memory. | Nothing. |
 | `agent.spawn` | Notes the subagent's type; opens the spend pane at the first one. | Nothing: the spawn goes on as asked, even if the mod fails. |
@@ -386,7 +386,7 @@ session with `claude --plugin-dir .` from the clone, or set `CC_TYPES` to
 that file). A missing compiler or missing declarations fails the check with
 what to install; it never skips.
 
-That runs `claude plugin validate .`; `claude plugin test .`, 104 tests
+That runs `claude plugin validate .`; `claude plugin test .`, 131 tests
 through the test runner Claude Code ships for plugins, with a mocked file
 system and mocked Claude Code events (the tests of the three former mods, one per
 option turned off, and tests where events finish out of order, arrive two at

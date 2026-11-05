@@ -5,7 +5,8 @@ The form is Keep a Changelog; versions follow SemVer.
 ## Unreleased
 - The npm description fits the registry's 255 characters; it was cut in the middle of a word.
 - The 80 percent spend notice now also comes from the cost read before each step. A tool loop that crossed 80 percent
-  and reached the cap inside one turn got no notice, because only the end-of-turn measurement could show it.
+  and reached the cap inside one turn got no notice: only a measurement could show it, and by the next one the cap was
+  already reached.
 - The "rows file not written" notice now stays in the status line after the subagent and usage figures until a write
   lands or the session ends. It was replaced by the next main-loop step and never came back, and it took the place of
   the subagent figures and pushed the cost toward the end of the line.
