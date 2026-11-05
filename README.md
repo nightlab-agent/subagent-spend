@@ -386,7 +386,7 @@ session with `claude --plugin-dir .` from the clone, or set `CC_TYPES` to
 that file). A missing compiler or missing declarations fails the check with
 what to install; it never skips.
 
-That runs `claude plugin validate .`; `claude plugin test .`, 136 tests
+That runs `claude plugin validate .`; `claude plugin test .`, 142 tests
 through the test runner Claude Code ships for plugins, with a mocked file
 system and mocked Claude Code events (the tests of the three former mods, one per
 option turned off, and tests where events finish out of order, arrive two at

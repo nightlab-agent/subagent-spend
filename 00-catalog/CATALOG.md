@@ -6,7 +6,7 @@
 | `README.md` | You are a user installing it, or checking what it does not do. |
 | `hooks/register.tsx` | You are changing which events the mod hooks, the panes, the status line or how files are written: the module the plugin loads. |
 | `hooks/spend.ts`, `hooks/usage.ts`, `hooks/turns.ts` | You are changing what one part counts or the text it writes (subagent rows; usage, option `usageFile`; turn counts, option `turnTally`). |
-| `types/index.d.ts` | You changed a field of Row or Shown: the panes' state contract (bump the atom's `shape` tag too). |
+| `types/index.d.ts` | You changed a field of Row, Shown or HeldCap: the panes' state contract (bump the atom's `shape` tag too). |
 | `hooks/*.test.ts`, `hooks/*.test.tsx` | You changed the module: `claude plugin test .` runs them (spend, usage, turns, options, collisions: out of order, two at once, look-alikes). |
 | `subagent_spend.py` | You are changing the by-hand hook, the statusline or the report. |
 | `tests/fixture_test.py` | You changed the script: run it. |

@@ -300,11 +300,16 @@ export const register: Register = (on, options) => {
     if (e.reason === 'clear') {
       // asked before the end step, not waited for: this chain shares one short bound. No answer, no key: a cost read
       // before the ledger's reset then counts for the new session
-      $.session.usage().then(u => {
-        const usd = u.cost?.usd ?? 0
-        // a figure below the one held, or none, is a ledger already reset: that start is the new session's
-        if (usd > 0 && usd >= (held ?? 0)) leftStart = u.startedAt ?? null
-      }, () => undefined)
+      const asked = costSession
+      try {
+        $.session.usage().then(u => {
+          const usd = u.cost?.usd ?? 0
+          // an answer after the end step, or a figure below the one held, may be of a ledger already reset
+          if (asked === costSession && usd > 0 && usd >= (held ?? 0)) leftStart = u.startedAt ?? null
+        }, () => undefined)
+      } catch {
+        // no answer, no key
+      }
     }
     parts.spend = undefined
     parts.notice = undefined
@@ -329,6 +334,8 @@ export const register: Register = (on, options) => {
   })
 
   on('session.measure', async ($, e, next) => {
+    // numbered before any wait: two at once keep the order the engine raised them in
+    const mine = ++seq
     if (leftStart !== null) {
       // a measurement carries no start, so it asks
       const session = costSession
@@ -341,7 +348,6 @@ export const register: Register = (on, options) => {
     if (e.cost) cap.spent = Math.max(cap.spent ?? 0, e.cost.usd)
     showWarning($)
     if (!usageOn) return next(e)
-    const mine = ++seq
     measured = e
     // the highest reading, as the cap: a measurement can land after a read that went past it
     parts.usage = usageStatus(e, e.cost ? (cap.spent ?? undefined) : undefined)
