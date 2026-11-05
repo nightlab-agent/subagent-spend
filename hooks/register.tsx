@@ -310,7 +310,8 @@ export const register: Register = (on, options) => {
     if (!usageOn) return next(e)
     const mine = ++seq
     measured = e
-    parts.usage = usageStatus(e)
+    // the highest reading, as the cap: a measurement can land after a read that went past it
+    parts.usage = usageStatus(e, e.cost ? (cap.spent ?? undefined) : undefined)
     showStatus($, parts)
     try {
       // a newer measurement already shown keeps the pane; this one's figures are behind it

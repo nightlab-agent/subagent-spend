@@ -19,6 +19,7 @@ The form is Keep a Changelog; versions follow SemVer.
 - A step that reads the cost while a session is ending no longer holds the new session at the old cost.
 - A cap set or lifted with `/spend-cap` now outlives a reload of the plugin; it went back to `capUsd`. A new `capUsd`
   in `/config` still wins.
+- A late measurement no longer moves the status line's cost back below the figure the cap holds on.
 
 ## 0.8.3 - 2026-11-03
 

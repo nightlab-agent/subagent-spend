@@ -80,3 +80,30 @@ test('comparison: with writes landing the line has the same figures and no notic
   expect(line).toContain('subagents 1')
   expect(line.slice(0, 80)).toContain('$1.00')
 })
+
+test('a measurement older than the read before a step leaves the line on the figure the cap holds on', { options: { capUsd: 5 } }, async ($, on) => {
+  const seen = world(on)
+  await $.session.measure(cost(0.5))
+  seen.engineCost = 1.5
+  await step($, 't1', 0)
+  await $.session.measure(cost(1))
+  expect(seen.lines.at(-1)).toContain('$1.50')
+})
+
+test('comparison: a measurement above the read moves the line up', { options: { capUsd: 5 } }, async ($, on) => {
+  const seen = world(on)
+  await $.session.measure(cost(0.5))
+  seen.engineCost = 1.5
+  await step($, 't1', 0)
+  await $.session.measure(cost(2))
+  expect(seen.lines.at(-1)).toContain('$2.00')
+})
+
+test('comparison: a measurement with no cost shows none, whatever was read before', { options: { capUsd: 5 } }, async ($, on) => {
+  const seen = world(on)
+  await $.session.measure(cost(0.5))
+  seen.engineCost = 1.5
+  await step($, 't1', 0)
+  await $.session.measure({ context: { tokens: 40000, window: 200000, percent: 20 }, rateLimits: [], changed: ['context'] })
+  expect(seen.lines.at(-1)).not.toContain('$')
+})
