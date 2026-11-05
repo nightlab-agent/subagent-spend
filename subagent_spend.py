@@ -65,7 +65,7 @@ def rows_for(session_id):
         if isinstance(j, dict) and "total" in j: byid[j.get("agent_id") or f"row{n}"] = j
     return list(byid.values())
 
-def fmt(n): return f"{n/1000:.0f}k" if n >= 10000 else str(n)
+def fmt(n): return f"{(n + 500) // 1000}k" if n >= 10000 else str(n)  # a half goes up, as Math.round does in hooks/spend.ts
 
 def statusline():
     try:

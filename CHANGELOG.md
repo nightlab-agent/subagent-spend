@@ -8,6 +8,7 @@ The form is Keep a Changelog; versions follow SemVer.
   and reached the cap inside one turn got no notice, because only the end-of-turn measurement could show it.
 - The "rows file not written" notice now stays in the status line beside the other figures until a write lands or the
   session ends. It was replaced by the next main-loop step and never came back.
+- The by-hand script's status line rounds as the mod does: 12500 tokens read 12k there and 13k in the mod.
 
 ## 0.8.3 - 2026-11-03
 

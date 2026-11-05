@@ -30,4 +30,10 @@ with tempfile.TemporaryDirectory() as d:
     hl = subprocess.run([sys.executable, "-I", str(TOOL), "--help"], text=True, capture_output=True, env=env); assert hl.returncode == 0 and "report" in hl.stdout, hl
     un = subprocess.run([sys.executable, "-I", str(TOOL), "bogus"], text=True, capture_output=True, env=env); assert un.returncode == 2 and "unknown command" in un.stderr and not un.stdout, un
     rep = subprocess.run([sys.executable, "-I", str(TOOL), "report", "--all"], text=True, capture_output=True, env=env); assert "Explore" in rep.stdout and "general-purpose" in rep.stdout and rep.stdout.count("sess1") == 2, rep.stdout
+    # the same rounding as the mod's fmt in hooks/spend.ts: a half goes up, where Python's format would take it to the even number
+    for total, shown in ((12500, "13k"), (14500, "15k"), (13499, "13k"), (10000, "10k"), (9999, "9999")):
+        (out / "round.jsonl").write_text(json.dumps({"agent_id": "ag9", "total": total, "output": total}) + "\n")
+        rd = subprocess.run([sys.executable, "-I", str(TOOL), "statusline"], input=json.dumps({"session_id": "round", "model": {"display_name": "Opus"}}), text=True, capture_output=True, env=env)
+        assert rd.stdout.strip() == f"Opus | subagents 1 | tok {shown} (out {shown})", (total, rd.stdout, rd.stderr)
+    (out / "round.jsonl").unlink()
     print("fixture test passed (3 rows, 2 distinct agents, the repeated stop counted once, the folder ignores itself)"); print(s.stdout.strip()); print(rep.stdout)
