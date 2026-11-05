@@ -169,6 +169,12 @@ export const register: Register = (on, options) => {
   // reading is the newest: a read that answers late with a lower figure never brings it back. Each
   // session end starts a new count, and a read still out for the session left is dropped.
   let costSession = 0
+  /** The next cost reading is the new session's. The first one comes with its first measurement; the cap the user set stays. */
+  const startCost = () => {
+    cap.spent = null
+    cap.warned = false
+    costSession++
+  }
 
   on('session.start', async ($, e, next) => {
     try {
@@ -261,10 +267,7 @@ export const register: Register = (on, options) => {
 
   on('session.end', async ($, e, next) => {
     startOver(e.sessionId)
-    // the next session's first measurement brings its own cost; the cap the user set stays
-    cap.spent = null
-    cap.warned = false
-    costSession++
+    startCost()
     spendError = undefined
     parts.spend = undefined
     // cost and context belong to the session left: the panes and the line wait for the new one's first reading
@@ -277,7 +280,12 @@ export const register: Register = (on, options) => {
     } catch {
       // the panes miss one redraw; the next step or measurement draws them
     }
-    return next(e)
+    try {
+      return await next(e)
+    } finally {
+      // a step can read the old cost while the end step runs; that figure goes with the session too
+      startCost()
+    }
   })
 
   on('session.measure', async ($, e, next) => {

@@ -22,6 +22,8 @@ const world = (on: On) => {
     writing: 0,
     redraw: null as Promise<void> | null,
     redrawing: false,
+    endHold: null as Promise<void> | null,
+    ending: false,
     sid: 'old',
   }
   on('fs.write', async (_, e) => {
@@ -35,7 +37,11 @@ const world = (on: On) => {
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('ui.toast', () => ({ value: undefined }))
   on('session.id', () => ({ value: seen.sid }))
-  on('session.end', (_, e) => ({ sessionId: e.sessionId }))
+  on('session.end', async (_, e) => {
+    seen.ending = true
+    if (seen.endHold) await seen.endHold
+    return { sessionId: e.sessionId }
+  })
   on('state.set', async () => {
     const hold = seen.redraw
     seen.redraw = null
@@ -125,4 +131,33 @@ test('comparison: with no /clear the same held redraw writes the step', async ($
   await out
   const last = seen.writes.filter(w => w.path.endsWith('old.jsonl')).at(-1)!
   expect(last.text).toContain('"turns":2')
+})
+
+test('a step that reads the cost while the end step runs does not hold the new session on the old cost', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.ledger = 2.5
+  const g = gate()
+  seen.endHold = g.hold
+  const ending = end($)
+  await until(() => seen.ending)
+  await step($, 0, 'late') // a subagent of the old session
+  g.open()
+  await ending
+  seen.sid = 'new'
+  seen.ledger = 0.01
+  seen.requests = 0
+  await step($, 0)
+  expect(seen.requests).toBe(1)
+})
+
+test('comparison: with no read while the end step runs the new session steps', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.ledger = 2.5
+  await step($, 0)
+  await end($)
+  seen.sid = 'new'
+  seen.ledger = 0.01
+  seen.requests = 0
+  await step($, 0)
+  expect(seen.requests).toBe(1)
 })

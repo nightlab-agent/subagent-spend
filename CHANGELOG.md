@@ -15,6 +15,7 @@ The form is Keep a Changelog; versions follow SemVer.
 - A rows write that fails after a `/clear` no longer puts the "rows file not written" notice on the new session, where
   nothing would take it off.
 - A `/clear` while a subagent step redraws the pane no longer empties the rows file of the session it left.
+- A step that reads the cost while a session is ending no longer holds the new session at the old cost.
 
 ## 0.8.3 - 2026-11-03
 
