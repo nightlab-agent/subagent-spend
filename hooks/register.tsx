@@ -191,6 +191,8 @@ export const register: Register = (on, options) => {
       // fires again at a reload; a cap set over another option gives way to the new one
       const held = await read($, heldCap)
       if (held?.option === capOption) cap.usd = held.usd
+      // the new option replaced it for good: changing back brings the option, not this
+      else if (held) await update($, heldCap, () => null)
     } catch {
       // nothing held on this surface: the option stands
     }
@@ -339,19 +341,24 @@ export const register: Register = (on, options) => {
     if (leftStart !== null) {
       // a measurement carries no start, so it asks
       const session = costSession
+      let left = false
       try {
-        if (ofLeft(session, await $.session.usage())) return next(e)
+        left = ofLeft(session, await $.session.usage())
       } catch {
-        // no answer: the measurement stands
+        // no answer: the measurement stands, unless /clear came during the read
+        left = session !== costSession
       }
+      if (left) return next(e)
     }
     if (e.cost) cap.spent = Math.max(cap.spent ?? 0, e.cost.usd)
     showWarning($)
     if (!usageOn) return next(e)
-    measured = e
-    // the highest reading, as the cap: a measurement can land after a read that went past it
-    parts.usage = usageStatus(e, e.cost ? (cap.spent ?? undefined) : undefined)
-    showStatus($, parts)
+    if (mine === seq) {
+      measured = e
+      // the highest reading, as the cap: a measurement can land after a read that went past it
+      parts.usage = usageStatus(e, e.cost ? (cap.spent ?? undefined) : undefined)
+      showStatus($, parts)
+    }
     try {
       // a newer measurement already shown keeps the pane; this one's figures are behind it
       await update($, shownUsage, s => (mine !== seq ? s : shownOf(e, new Date())))

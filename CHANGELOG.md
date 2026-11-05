@@ -3,6 +3,12 @@
 The form is Keep a Changelog; versions follow SemVer.
 
 ## Unreleased
+- Lowering or changing `capUsd` now ends a cap set with `/spend-cap` for good. Before, changing the option away and
+  back brought the old `/spend-cap` figure back.
+- A measurement from before /clear no longer sets the new session's cost when its usage read fails. Before, the new
+  session could stop at the cap on the old session's cost. One gap stays: a measurement raised just before the engine's
+  reset whose read answers just after it still counts; `/spend-cap off` clears that.
+- Two overlapping measurements keep the newer one in the status line; the older could overwrite it.
 - A subagent step in the moment after /clear, while the engine still names the session left, no longer rewrites that
   session's rows file with that one step.
 - The npm description fits the registry's 255 characters; it was cut in the middle of a word.
