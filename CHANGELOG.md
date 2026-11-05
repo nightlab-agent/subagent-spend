@@ -2,7 +2,7 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
-## Unreleased
+## 0.8.4 - 2026-11-04
 - Lowering or changing `capUsd` now ends a cap set with `/spend-cap` for good. Before, changing the option away and
   back brought the old `/spend-cap` figure back.
 - A measurement from before /clear no longer sets the new session's cost when its usage read fails. Before, the new

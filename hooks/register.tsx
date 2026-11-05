@@ -5,7 +5,10 @@ import type { HeldCap, Row, Shown } from '../types'
 import { addStep, count, fmt, latest, nextStep, rowsText, paneLines, rows, spendStatus, types } from './spend'
 import { countCall, localDay, tally, tallyText, turnsStatus } from './turns'
 import { cap, capCommand, capOf, heldText, reached, warnNow } from './cap'
-import { OPEN_AT, bar, fileText, shownOf, shownStatus, usageLines, usageStatus } from './usage'
+import { OPEN_AT, fileText, shownOf, shownStatus, usageStatus } from './usage'
+import { SPEND_PANE, USAGE_PANE, registerPanes } from './panes'
+import { out, writeLatest } from './write'
+import type { Out } from './write'
 
 // subagent-spend, the hooks module: a session's meters in one mod.
 //
@@ -33,13 +36,12 @@ import { OPEN_AT, bar, fileText, shownOf, shownStatus, usageLines, usageStatus }
 // write is swallowed (a failed rows write is named in the status line until a write lands): the files are
 // advisory, and a gauge that stops the engine would be worse than no gauge.
 
-const SPEND_PANE = 'subagent-spend'
 const SPEND_TITLE = 'Subagent spend'
-const USAGE_PANE = 'usage-file'
 const USAGE_TITLE = 'Usage'
 
-// What the panes draw; the module's own Map stays the rows file's source. Change a tag
-// when its type's fields change: it declines what an earlier version stored.
+// What the panes draw (the same plugin, key and shape in hooks/panes.tsx: the engine's scan reads each file's own
+// atoms); the module's own Map stays the rows file's source. Change a tag, in both files, when its type's fields change:
+// it declines what an earlier version stored.
 const shownRows = atom({ plugin: 'subagent-spend', key: 'rows' } as const, [] as Row[], { shape: 'rows-2' })
 const shownUsage = atom({ plugin: 'subagent-spend', key: 'latest' } as const, null as Shown | null, { shape: 'latest-1' })
 // `/spend-cap`'s last word, held by the host: a reload starts these modules over and runs `register` from the options alone.
@@ -83,47 +85,6 @@ async function sessionNow($: EngineInterface) {
   if (rowsSession !== null && id !== rowsSession) startOver(rowsSession)
   rowsSession = id
   return id
-}
-
-/** One file of one part in this session: whether a write is in flight, whether one is owed, whether
- * `<dir>/.gitignore` is left alone (a folder not of the mod's own name) or was written, and the newest content to write. */
-type Out = { writing: boolean; owed: boolean; ignore: boolean; ignored: boolean; newest: { name: string; text: () => string } | null }
-const out = (own: boolean): Out => ({ writing: false, owed: false, ignore: !own, ignored: false, newest: null })
-
-/** One write at a time per file, always from the newest content. Two events can wait at once (on
- * `$.session.id()` or on a write); if the earlier one's write landed last, its older figures would sit on
- * top of the newer ones. An event that finds a write in flight marks the file as owed and goes on; the
- * writing one writes again, from the newest content, until nothing is owed. A failed write is made up
- * by the next event. Before each write, when it is missing: `<dir>/.gitignore` holding `*`, so git
- * ignores the folder in every project with no step from the user. True when this call wrote; false when
- * it left the file to the write in flight, whose result is not known yet. */
-async function writeLatest($: EngineInterface, dir: string, f: Out) {
-  if (f.writing) {
-    f.owed = true
-    return false
-  }
-  f.writing = true
-  try {
-    do {
-      f.owed = false
-      if (!f.ignore) {
-        // checked before every write, not once: a user who deletes the folder mid-session gets it back ignored
-        let has = f.ignored
-        try {
-          has = await $.fs.exists(`${dir}/.gitignore`)
-        } catch {
-          // a host that cannot answer: once per session, as before
-        }
-        if (!has) await $.fs.write(`${dir}/.gitignore`, '*\n')
-        f.ignored = true
-      }
-      const n = f.newest
-      if (n) await $.fs.write(`${dir}/${n.name}`, n.text())
-    } while (f.owed)
-    return true
-  } finally {
-    f.writing = false
-  }
 }
 
 /** Each part's piece of the status line; undefined until that part has a reading. */
@@ -228,51 +189,7 @@ export const register: Register = (on, options) => {
     return { text: `Usage pane opened. ${s ? shownStatus(s) : 'No measurement yet in this session.'}` }
   })
 
-  on('ui.render', { component: 'Pane', requestId: SPEND_PANE }, async ($, e) => {
-    const { Box, Text } = $.ui.resolve(e)
-    const list = await read($, shownRows)
-    const room = Math.max(1, (e.viewport?.rows ?? 24) - 4)
-    let tok = 0
-    for (const r of list) tok += r.total
-    return (
-      <Box flexDirection="column">
-        <Text bold>
-          {count(list.length, 'subagent')}, {fmt(tok)} tokens
-        </Text>
-        {list.length === 0 && <Text dimColor>No subagent has run in this session yet.</Text>}
-        {paneLines(list)
-          .slice(0, room)
-          .map(line => (
-            <Text>{line}</Text>
-          ))}
-      </Box>
-    )
-  })
-
-  on('ui.render', { component: 'Pane', requestId: USAGE_PANE }, async ($, e, next) => {
-    if (!usageOn) return next(e)
-    const { Box, Text } = $.ui.resolve(e)
-    const s = await read($, shownUsage)
-    if (!s) {
-      return (
-        <Box flexDirection="column">
-          <Text dimColor>No measurement yet in this session.</Text>
-        </Box>
-      )
-    }
-    const now = new Date()
-    return (
-      <Box flexDirection="column">
-        {s.windows.length === 0 && <Text dimColor>No rate-limit windows (not on a subscription).</Text>}
-        {usageLines(s, now).map((line, i) => (
-          <Text color={s.windows[i]!.percentUsed >= OPEN_AT ? 'red' : undefined}>{line}</Text>
-        ))}
-        {s.context !== null && <Text>{`Context     ${bar(s.context)}  ${s.context}%`}</Text>}
-        {s.usd !== null && <Text>{`Cost        $${s.usd.toFixed(2)}`}</Text>}
-        <Text dimColor>{`measured ${s.at.slice(11, 19)} UTC`}</Text>
-      </Box>
-    )
-  })
+  registerPanes(on, usageOn)
 
   on('agent.spawn', async ($, e, next) => {
     const started = await next(e)

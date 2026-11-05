@@ -1,6 +1,6 @@
 {
   "name": "@nightlab-agent/subagent-spend",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "description": "Claude Code plugin: a spend cap for interactive sessions, and per-subagent tokens, rate-limit windows, context fill, cost, steps, tool calls and tool errors, in a notice under the prompt, local files and panes (the usage pane not yet seen on a screen).",
   "keywords": [
     "claude-code",
@@ -30,6 +30,8 @@
     "hooks/spend.ts",
     "hooks/turns.ts",
     "hooks/usage.ts",
+    "hooks/panes.tsx",
+    "hooks/write.ts",
     "types/",
     "kit/",
     "subagent_spend.py",
