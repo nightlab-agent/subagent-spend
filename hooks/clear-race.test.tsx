@@ -87,3 +87,42 @@ test('a resume back into the session left at /clear counts there again', async (
   await step($, 0, 's-z')
   expect(lastOf(writes, 's-a.jsonl').map(r => r.agent_id).join(',')).toBe('s-z')
 })
+
+test('a step between /clear and the id switch leaves the left rows file whole', async ($, on) => {
+  const sid = { v: 'g-old' }
+  const slow: { hold: Promise<void> | null; held?: boolean } = { hold: null }
+  const { writes } = world(on, sid, slow)
+  await step($, 0, 'g-a')
+  await step($, 0, 'g-b')
+  await $.session.end({ reason: 'clear', sessionId: 'g-old' } as any).catch(() => undefined)
+  // the id has not switched yet: the engine still answers the session left
+  await step($, 1, 'g-a')
+  const oldIds = lastOf(writes, 'g-old.jsonl').map(r => r.agent_id).sort().join(',')
+  sid.v = 'g-new'
+  await step($, 0, 'g-c')
+  const newIds = lastOf(writes, 'g-new.jsonl').map(r => r.agent_id).join(',')
+  expect(`old=${oldIds} new=${newIds}`).toBe('old=g-a,g-b new=g-c')
+})
+
+test('comparison: a resume back to a session left at /clear counts there, with no step between', async ($, on) => {
+  const sid = { v: 'h-old' }
+  const slow: { hold: Promise<void> | null; held?: boolean } = { hold: null }
+  const { writes } = world(on, sid, slow)
+  await step($, 0, 'h-a')
+  await $.session.end({ reason: 'clear', sessionId: 'h-old' } as any).catch(() => undefined)
+  sid.v = 'h-new'
+  await $.session.end({ reason: 'resume', sessionId: 'h-new' } as any).catch(() => undefined)
+  sid.v = 'h-old'
+  await step($, 1, 'h-a')
+  expect(lastOf(writes, 'h-old.jsonl').map(r => r.agent_id).join(',')).toBe('h-a')
+})
+
+test('comparison: a host with no session id keeps counting after /clear', async ($, on) => {
+  const sid = { v: '' }
+  const slow: { hold: Promise<void> | null; held?: boolean } = { hold: null }
+  const { writes } = world(on, sid, slow)
+  await step($, 0, 'n-a')
+  await $.session.end({ reason: 'clear', sessionId: '' } as any).catch(() => undefined)
+  await step($, 0, 'n-b')
+  expect(lastOf(writes, 'no-session.jsonl').map(r => r.agent_id).join(',')).toBe('n-b')
+})

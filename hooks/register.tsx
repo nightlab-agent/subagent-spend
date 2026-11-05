@@ -56,6 +56,9 @@ let rowsSession: string | null = null
 let asks = 0
 let switchedAt = 0
 let leftSession: string | null = null
+// The session left at a /clear, until the next end says otherwise: the engine goes on naming it for a moment after
+// session.end, and a step in that moment would rewrite its closed rows file with that step alone. Only a resume comes back to it.
+let cleared: string | null = null
 
 function startOver(left: string | null) {
   leftSession = left
@@ -76,7 +79,7 @@ async function sessionNow($: EngineInterface) {
   } catch {
     // no session id on this host
   }
-  if (mine <= switchedAt && id === leftSession) return null
+  if (id === cleared || (mine <= switchedAt && id === leftSession)) return null
   if (rowsSession !== null && id !== rowsSession) startOver(rowsSession)
   rowsSession = id
   return id
@@ -289,6 +292,7 @@ export const register: Register = (on, options) => {
 
   on('session.end', async ($, e, next) => {
     startOver(e.sessionId)
+    cleared = e.reason === 'clear' && e.sessionId ? e.sessionId : null
     startCost()
     if (e.reason === 'clear') {
       // asked before the end step, not waited for: this chain shares one short bound. No answer, no key: a cost read

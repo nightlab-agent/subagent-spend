@@ -3,6 +3,8 @@
 The form is Keep a Changelog; versions follow SemVer.
 
 ## Unreleased
+- A subagent step in the moment after /clear, while the engine still names the session left, no longer rewrites that
+  session's rows file with that one step.
 - The npm description fits the registry's 255 characters; it was cut in the middle of a word.
 - The 80 percent spend notice now also comes from the cost read before each step. A tool loop that crossed 80 percent
   and reached the cap inside one turn got no notice: only a measurement could show it, and by the next one the cap was
