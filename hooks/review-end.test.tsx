@@ -258,6 +258,21 @@ test('comparison: a build that reports no start still counts the cost after a /c
   expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $0.50.')
 })
 
+test("a /clear takes the old session's figures off the line, and a read after it brings none of them back", { options: { capUsd: 5 } }, async ($, on) => {
+  const seen = world(on)
+  await step($, 0, 'bg')
+  await $.session.measure(cost(1))
+  expect(seen.lines.at(-1)).toContain('subagents 1')
+  expect(seen.lines.at(-1)).toContain('ctx 20%')
+  await end($)
+  expect(seen.lines.at(-1) ?? '').not.toContain('subagents')
+  expect(seen.lines.at(-1) ?? '').not.toContain('ctx')
+  engineResets(seen, 0.01)
+  await step($, 1)
+  expect(seen.lines.at(-1) ?? '').not.toContain('subagents')
+  expect(seen.lines.at(-1) ?? '').not.toContain('ctx')
+})
+
 test('a rows write that fails while the end step runs leaves no notice either', async ($, on) => {
   const seen = world(on)
   seen.fail = true
@@ -272,4 +287,20 @@ test('a rows write that fails while the end step runs leaves no notice either', 
   seen.fail = false
   await step($, 1)
   expect(seen.lines.at(-1) ?? '').not.toContain('not written')
+})
+
+test('a read while a resume ends, which has no key, does not hold the session resumed', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.ledger = 2.5
+  const g = gate()
+  seen.endHold = g.hold
+  const ending = end($, 'resume')
+  await until(() => seen.ending)
+  await step($, 0, 'late')
+  g.open()
+  await ending
+  seen.ledger = 0.01
+  seen.requests = 0
+  await step($, 0)
+  expect(seen.requests).toBe(1)
 })

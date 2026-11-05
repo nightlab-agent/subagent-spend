@@ -202,7 +202,7 @@ test('a read still out when the session ends gives the new session no notice', {
 
 test('/spend-cap takes plain dollars only: hex, octal, binary and exponent forms change nothing', { options: { capUsd: 3 } }, async ($, on) => {
   world(on)
-  for (const args of ['0x10', '0X10', '0b11', '0o7', '1e2', '1E2', '+5', '-5', '5 5', '$', '.', 'Infinity']) {
+  for (const args of ['0x10', '0X10', '0b11', '0o7', '1e2', '1E2', '+5', '-5', '5 5', '$', '$ 5', '.', 'Infinity']) {
     expect((await $.command.run({ command: 'spend-cap', args, ...RUN })).text).toBe(`Not a cap: "${args}". Give dollars, like /spend-cap 5, or /spend-cap off.`)
   }
   expect((await $.command.run({ command: 'spend-cap', args: '', ...RUN })).text).toBe('Spend cap $3.00. No cost reading yet.')
