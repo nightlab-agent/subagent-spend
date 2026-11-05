@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import type { TestBody } from 'claude-code/testing'
 import type { SessionMeasureInput } from 'claude-code'
 
-// What is still running while a session ends. At a /clear the engine (2.1.312, clearConversation) runs the
+// What is still running while a session ends. At a /clear the engine (seen in the 2.1.312 bundle; the declarations name no order) runs the
 // session.end chain, then later resets the cost ledger and moves to the new session id; subagents live through it.
 
 type On = Parameters<TestBody>[1]
@@ -258,6 +258,18 @@ test('a resume back into the session left at /clear counts its cost: the key fro
   seen.started = first
   seen.ledger = 1.5
   await step($, 0)
+  expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $1.50.')
+})
+
+test('a cost and start already reset when session.end asks take no key, so the new session still counts', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.ledger = 1
+  await step($, 0)
+  // another engine order than 2.1.312's: the ledger moves before the hook's question is answered
+  engineResets(seen, 0)
+  await end($)
+  seen.ledger = 1.5
+  await step($, 1)
   expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $1.50.')
 })
 

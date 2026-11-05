@@ -56,7 +56,7 @@ let rowsSession: string | null = null
 let asks = 0
 let switchedAt = 0
 let leftSession: string | null = null
-// The session left at a /clear, until the next end says otherwise: the engine goes on naming it for a moment after
+// The session left at a /clear, until the next end says otherwise: the engine may go on naming it for a moment after
 // session.end, and a step in that moment would rewrite its closed rows file with that step alone. Only a resume comes back to it.
 let cleared: string | null = null
 
@@ -173,8 +173,8 @@ export const register: Register = (on, options) => {
   // reading is the newest: a read that answers late with a lower figure never brings it back. Each
   // session end starts a new count, and a read still out for the session left is dropped.
   let costSession = 0
-  // A /clear resets the cost ledger after session.end is over (2.1.312: past a yield), and a step or measurement can
-  // land between. Cost and start reset together (SessionUsage.startedAt: what the figures count from), so a reading
+  // A /clear can reset the cost ledger after session.end is over (seen in the 2.1.312 bundle; the declarations name no
+  // order), and a step or measurement can land between. Cost and start reset together (SessionUsage.startedAt: what the figures count from), so a reading
   // with the left session's start is the left session's. A fork or resume may keep that start: only a /clear sets this.
   let leftStart: number | null = null
   /** Whether a usage read made while `costSession` stood at `session` belongs to a session already left. */
@@ -293,13 +293,18 @@ export const register: Register = (on, options) => {
   on('session.end', async ($, e, next) => {
     startOver(e.sessionId)
     cleared = e.reason === 'clear' && e.sessionId ? e.sessionId : null
+    const held = cap.spent
     startCost()
     // a key outlives no end: a resume may come back to the session it names
     leftStart = null
     if (e.reason === 'clear') {
       // asked before the end step, not waited for: this chain shares one short bound. No answer, no key: a cost read
       // before the ledger's reset then counts for the new session
-      $.session.usage().then(u => (leftStart = u.startedAt ?? null), () => undefined)
+      $.session.usage().then(u => {
+        const usd = u.cost?.usd ?? 0
+        // a figure below the one held, or none, is a ledger already reset: that start is the new session's
+        if (usd > 0 && usd >= (held ?? 0)) leftStart = u.startedAt ?? null
+      }, () => undefined)
     }
     parts.spend = undefined
     parts.notice = undefined
