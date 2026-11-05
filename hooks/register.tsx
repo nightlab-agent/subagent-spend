@@ -294,6 +294,8 @@ export const register: Register = (on, options) => {
     startOver(e.sessionId)
     cleared = e.reason === 'clear' && e.sessionId ? e.sessionId : null
     startCost()
+    // a key outlives no end: a resume may come back to the session it names
+    leftStart = null
     if (e.reason === 'clear') {
       // asked before the end step, not waited for: this chain shares one short bound. No answer, no key: a cost read
       // before the ledger's reset then counts for the new session

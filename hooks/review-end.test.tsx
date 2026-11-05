@@ -248,6 +248,19 @@ test('comparison: another reason for ending keeps no key, so a session with the 
   expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $1.00.')
 })
 
+test('a resume back into the session left at /clear counts its cost: the key from the /clear does not stay', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  const first = seen.started
+  seen.ledger = 1
+  await end($)
+  engineResets(seen, 0)
+  await end($, 'resume')
+  seen.started = first
+  seen.ledger = 1.5
+  await step($, 0)
+  expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $1.50.')
+})
+
 test('comparison: a build that reports no start still counts the cost after a /clear', { options: { capUsd: 2 } }, async ($, on) => {
   const seen = world(on)
   seen.started = undefined
