@@ -12,6 +12,8 @@ The form is Keep a Changelog; versions follow SemVer.
 - The Usage pane reads "resets in <1m" in a window's last minute; it read "resets in 0h 00m".
 - `/spend-cap` takes plain dollars only. `0x10` set a $16 cap and `1e2` a $100 cap; both are now refused, and so are
   a leading `+` or a space after the `$`.
+- A rows write that fails after a `/clear` no longer puts the "rows file not written" notice on the new session, where
+  nothing would take it off.
 
 ## 0.8.3 - 2026-11-03
 

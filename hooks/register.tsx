@@ -372,6 +372,7 @@ export const register: Register = (on, options) => {
     }
     parts.spend = spendError ?? spendStatus()
     showStatus($, parts)
+    const writing = costSession
     try {
       // the text is taken now, not at the write: a /clear while a write waits empties the Map it reads
       const text = rowsText()
@@ -382,6 +383,8 @@ export const register: Register = (on, options) => {
         showStatus($, parts)
       }
     } catch (err) {
+      // a write of the session left: on the new session nothing would take its notice off
+      if (writing !== costSession) return response
       // unwritable folder: the line says so until a write lands, and the session goes on
       spendError = `subagent-spend: rows file not written (${err instanceof Error ? err.message : String(err)})`
       parts.spend = spendError
