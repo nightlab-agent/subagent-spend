@@ -257,3 +257,19 @@ test('comparison: a build that reports no start still counts the cost after a /c
   await step($, 0)
   expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $0.50.')
 })
+
+test('a rows write that fails while the end step runs leaves no notice either', async ($, on) => {
+  const seen = world(on)
+  seen.fail = true
+  const g = gate()
+  seen.endHold = g.hold
+  const ending = end($)
+  await until(() => seen.ending)
+  await step($, 0, 'late')
+  g.open()
+  await ending
+  seen.sid = 'new'
+  seen.fail = false
+  await step($, 1)
+  expect(seen.lines.at(-1) ?? '').not.toContain('not written')
+})

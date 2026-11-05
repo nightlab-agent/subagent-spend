@@ -13,7 +13,7 @@ The form is Keep a Changelog; versions follow SemVer.
 - The Usage pane reads "resets in <1m" in a window's last minute; it read "resets in 0h 00m".
 - `/spend-cap` takes plain dollars only. `0x10` set a $16 cap and `1e2` a $100 cap; both are now refused, and so are
   a leading `+` or a space after the `$`.
-- A rows write that fails after a `/clear` no longer puts the "rows file not written" notice on the new session, where
+- A rows write that fails during or after a `/clear` no longer puts the "rows file not written" notice on the new session, where
   nothing would take it off.
 - A `/clear` while a subagent step redraws the pane no longer empties the rows file of the session it left.
 - A step that reads the cost while a session is ending no longer holds the new session at the old cost.

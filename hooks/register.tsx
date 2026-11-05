@@ -310,8 +310,10 @@ export const register: Register = (on, options) => {
     try {
       return await next(e)
     } finally {
-      // a step can read the old cost while the end step runs; that figure goes with the session too
+      // a step can read the old cost, or fail a write, while the end step runs; both go with the session too
       startCost()
+      parts.notice = undefined
+      showStatus($, parts)
     }
   })
 
