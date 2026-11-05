@@ -10,6 +10,8 @@ The form is Keep a Changelog; versions follow SemVer.
   session ends. It was replaced by the next main-loop step and never came back.
 - The by-hand script's status line rounds as the mod does: 12500 tokens read 12k there and 13k in the mod.
 - The Usage pane reads "resets in <1m" in a window's last minute; it read "resets in 0h 00m".
+- `/spend-cap` takes plain dollars only. `0x10` set a $16 cap and `1e2` a $100 cap; both are now refused, and so are
+  a leading `+` or a space after the `$`.
 
 ## 0.8.3 - 2026-11-03
 

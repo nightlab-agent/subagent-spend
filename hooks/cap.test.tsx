@@ -2,6 +2,8 @@ import { expect, test } from 'claude-code/testing'
 import type { TestBody } from 'claude-code/testing'
 import type { SessionMeasureInput } from 'claude-code'
 
+import { capOf } from './cap'
+
 const RUN = { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 100 } } as const
 
 // The spend cap (`capUsd`). Each test stands for the engine beneath the plugin, as in the other
@@ -194,4 +196,26 @@ test('a read still out when the session ends gives the new session no notice', {
   answer()
   await out
   expect(seen.toasts).toEqual([])
+})
+
+test('/spend-cap takes plain dollars only: hex, octal, binary and exponent forms change nothing', { options: { capUsd: 3 } }, async ($, on) => {
+  world(on)
+  for (const args of ['0x10', '0X10', '0b11', '0o7', '1e2', '1E2', '+5', '-5', '5 5', '$', '.', 'Infinity']) {
+    expect((await $.command.run({ command: 'spend-cap', args, ...RUN })).text).toBe(`Not a cap: "${args}". Give dollars, like /spend-cap 5, or /spend-cap off.`)
+  }
+  expect((await $.command.run({ command: 'spend-cap', args: '', ...RUN })).text).toBe('Spend cap $3.00. No cost reading yet.')
+})
+
+test('comparison: every plain way to write dollars still sets the cap', () => {
+  const plain: [string, number][] = [['5', 5], ['2.50', 2.5], ['$4', 4], ['$0.50', 0.5], ['.5', 0.5], ['$.5', 0.5], ['5.', 5], [' 7 ', 7]]
+  for (const [text, usd] of plain) expect(capOf(text)).toBe(usd)
+})
+
+test('the option stays a number first: a number in any notation is that number', () => {
+  expect(capOf(1e2)).toBe(100)
+  expect(capOf(0x10)).toBe(16)
+  expect(capOf(0)).toBe(null)
+  expect(capOf(-1)).toBe(null)
+  expect(capOf(Number.NaN)).toBe(null)
+  expect(capOf(undefined)).toBe(null)
 })

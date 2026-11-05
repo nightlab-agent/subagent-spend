@@ -14,9 +14,13 @@ export const cap = {
   warned: false,
 }
 
+/** Dollars as a person writes them: `5`, `2.50`, `$4`, `.5`. Number() alone also reads `0x10` as 16 and `1e2` as 100. */
+const DOLLARS = /^\$?(\d+(\.\d*)?|\.\d+)$/
+
 /** The option's value as a cap: a positive number of dollars, anything else off. */
 export function capOf(v: unknown): number | null {
-  const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v.trim().replace(/^\$/, '')) : NaN
+  const text = typeof v === 'string' ? v.trim() : ''
+  const n = typeof v === 'number' ? v : DOLLARS.test(text) ? Number(text.replace(/^\$/, '')) : NaN
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
