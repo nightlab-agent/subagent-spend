@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, SessionMeasureInput } from 'claude-code'
 
-import type { Row, Shown } from '../types'
+import type { HeldCap, Row, Shown } from '../types'
 import { addStep, count, fmt, latest, nextStep, rowsText, paneLines, rows, spendStatus, types } from './spend'
 import { countCall, localDay, tally, tallyText, turnsStatus } from './turns'
 import { cap, capCommand, capOf, heldText, reached, warnNow } from './cap'
@@ -42,6 +42,8 @@ const USAGE_TITLE = 'Usage'
 // when its type's fields change: it declines what an earlier version stored.
 const shownRows = atom({ plugin: 'subagent-spend', key: 'rows' } as const, [] as Row[], { shape: 'rows-2' })
 const shownUsage = atom({ plugin: 'subagent-spend', key: 'latest' } as const, null as Shown | null, { shape: 'latest-1' })
+// `/spend-cap`'s last word, held by the host: a reload starts these modules over and runs `register` from the options alone.
+const heldCap = atom({ plugin: 'subagent-spend', key: 'cap' } as const, null as HeldCap | null, { shape: 'cap-1' })
 
 let spendOpened = false
 let usageOpened = false
@@ -147,7 +149,8 @@ function showWarning($: EngineInterface) {
 
 export const register: Register = (on, options) => {
   const usageOn = options.usageFile !== false
-  cap.usd = capOf(options.capUsd)
+  const capOption = capOf(options.capUsd)
+  cap.usd = capOption
   cap.spent = null
   cap.warned = false
   const turnsOn = options.turnTally !== false
@@ -176,6 +179,13 @@ export const register: Register = (on, options) => {
 
   on('session.start', async ($, e, next) => {
     try {
+      // fires again at a reload; a cap set over another option gives way to the new one
+      const held = await read($, heldCap)
+      if (held?.option === capOption) cap.usd = held.usd
+    } catch {
+      // nothing held on this surface: the option stands
+    }
+    try {
       await $.command.register({ name: 'subagent-spend', description: 'Show what each subagent of this session costs, in a pane' })
       await $.command.register({ name: 'spend-cap', description: 'Show, set (/spend-cap 5) or lift (/spend-cap off) the spend cap of this session' })
       if (usageOn) await $.command.register({ name: 'usage-file', description: 'Show the rate-limit windows, context and cost of this session, in a pane' })
@@ -185,7 +195,15 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  on('command.run', { command: 'spend-cap' }, async (_, e) => ({ text: capCommand(e.args ?? '') }))
+  on('command.run', { command: 'spend-cap' }, async ($, e) => {
+    const text = capCommand(e.args ?? '')
+    try {
+      await update($, heldCap, () => ({ usd: cap.usd, option: capOption }))
+    } catch {
+      // the cap holds in memory; only a reload would lose it
+    }
+    return { text }
+  })
 
   on('command.run', { command: 'subagent-spend' }, async $ => {
     await $.ui.open({ id: SPEND_PANE, title: SPEND_TITLE })

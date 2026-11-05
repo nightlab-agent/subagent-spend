@@ -2,6 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import type { TestBody } from 'claude-code/testing'
 import type { SessionMeasureInput } from 'claude-code'
 
+import type { HeldCap } from '../types'
 import { capOf } from './cap'
 
 const RUN = { origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 100 } } as const
@@ -23,6 +24,7 @@ const world = (on: On, opts: { noToasts?: boolean } = {}) => {
     return { value: undefined }
   })
   on('session.id', () => ({ value: 'sess-c' }))
+  on('session.start', () => ({ cwd: '.' }))
   on('session.measure', (_, e) => ({ changed: e.changed }))
   on('turn.step', async function* (_, e) {
     seen.requests++
@@ -218,4 +220,51 @@ test('the option stays a number first: a number in any notation is that number',
   expect(capOf(-1)).toBe(null)
   expect(capOf(Number.NaN)).toBe(null)
   expect(capOf(undefined)).toBe(null)
+})
+
+// A reload: the module starts over, `register` takes the cap from the options, and session.start fires again; what
+// the host holds stays. The kit has no reload, but each test loads the module fresh, so `host` holding a value at the
+// start stands for what a reload finds.
+const host = (on: On, cap?: HeldCap) => {
+  const held = new Map<string, unknown>(cap ? [['cap', { shape: 'cap-1', value: cap }]] : [])
+  on('state.get', (_, e) => ({ value: { value: held.get(e.key), version: 1 } }) as any)
+  on('state.set', (_, e) => (held.set(e.key, e.value), { value: { isSet: true, version: 1 } }))
+  return held
+}
+const reloaded = async ($: Dollar) => {
+  await $.session.start({ cwd: '.' } as any)
+  return (await $.command.run({ command: 'spend-cap', args: '', ...RUN })).text
+}
+
+test('/spend-cap leaves the cap with the host, and the option it was set over', { options: { capUsd: 2 } }, async ($, on) => {
+  world(on)
+  const held = host(on)
+  await $.command.run({ command: 'spend-cap', args: '5', ...RUN })
+  expect(held.get('cap')).toEqual({ shape: 'cap-1', value: { usd: 5, option: 2 } })
+  await $.command.run({ command: 'spend-cap', args: 'off', ...RUN })
+  expect(held.get('cap')).toEqual({ shape: 'cap-1', value: { usd: null, option: 2 } })
+})
+
+test('after a reload a cap set with /spend-cap is still the cap', async ($, on) => {
+  world(on)
+  host(on, { usd: 5, option: null })
+  expect(await reloaded($)).toContain('Spend cap $5.00.')
+})
+
+test('after a reload a cap lifted with /spend-cap off stays lifted', { options: { capUsd: 2 } }, async ($, on) => {
+  world(on)
+  host(on, { usd: null, option: 2 })
+  expect(await reloaded($)).toContain('No spend cap.')
+})
+
+test('comparison: a new capUsd in /config beats a cap set over the old one', { options: { capUsd: 3 } }, async ($, on) => {
+  world(on)
+  host(on, { usd: 5, option: 2 })
+  expect(await reloaded($)).toContain('Spend cap $3.00.')
+})
+
+test('comparison: with nothing held a session starts on its option', { options: { capUsd: 3 } }, async ($, on) => {
+  world(on)
+  host(on)
+  expect(await reloaded($)).toContain('Spend cap $3.00.')
 })

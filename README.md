@@ -141,7 +141,9 @@ For an interactive session, set `capUsd` in `/config` to a number of dollars.
 At 80 percent of it a notice says so, once. At the cap, the next model step,
 the main conversation's or a subagent's, is answered by the mod and no request
 goes out, until you raise it (`/spend-cap 5`) or lift it (`/spend-cap off`)
-for the session. `/spend-cap` alone shows the cap and the cost so far.
+for the session. What `/spend-cap` sets outlives a reload of the plugin;
+changing `capUsd` replaces it. `/spend-cap` alone shows the cap and the cost
+so far.
 
 ![Claude Code with a $0.10 cap: asked to read every file and describe each, Claude reads four files; the next step is answered by the mod's line saying the session cost $0.11 of the $0.10 cap and no request was sent](https://raw.githubusercontent.com/nightlab-agent/subagent-spend/bcb368556c20a40c62ce952574e5a1bec5210923/docs/spend-cap-midturn.png)
 

@@ -22,8 +22,11 @@ export type Shown = {
   usd: number | null
 }
 
+/** What /spend-cap last left, and the `capUsd` option in force then. */
+export type HeldCap = { usd: number | null; option: number | null }
+
 declare module 'claude-code' {
   interface PluginState {
-    'subagent-spend': { rows: Shaped<Row[]>; latest: Shaped<Shown | null> }
+    'subagent-spend': { rows: Shaped<Row[]>; latest: Shaped<Shown | null>; cap: Shaped<HeldCap | null> }
   }
 }
