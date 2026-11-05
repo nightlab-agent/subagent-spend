@@ -4,6 +4,8 @@ The form is Keep a Changelog; versions follow SemVer.
 
 ## Unreleased
 - The npm description fits the registry's 255 characters; it was cut in the middle of a word.
+- The 80 percent spend notice now also comes from the cost read before each step. A tool loop that crossed 80 percent
+  and reached the cap inside one turn got no notice, because only the end-of-turn measurement could show it.
 
 ## 0.8.3 - 2026-11-03
 

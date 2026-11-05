@@ -316,7 +316,7 @@ environment variable. Everything stays on your machine.
 | `tool.call` | Counts the call, and whether it came back as an error (turn counts). | Nothing: the call runs as asked and its result passes through. |
 | `session.measure` | Updates the usage figures, the status line and `latest.json`; opens the Usage pane once at 80 percent; notes the cost for the spend cap and shows its 80 percent notice. | Nothing: the event passes through untouched. |
 | `session.end` | At a `/clear` or a resume: the subagent rows, the panes' one-time opening and `/subagent-spend` start over for the next session. | Nothing: the event passes through untouched. |
-| `turn.step` | Main conversation: counts the step and rewrites the day file. Subagent: adds the step's tokens to its row and rewrites the rows file. | Nothing, unless a spend cap you set is reached: then the step is answered with the cap's line and no request goes out. |
+| `turn.step` | With a spend cap: reads the cost before the step and shows the 80 percent notice if that read crossed it. Main conversation: counts the step and rewrites the day file. Subagent: adds the step's tokens to its row and rewrites the rows file. | Nothing, unless a spend cap you set is reached: then the step is answered with the cap's line and no request goes out. |
 
 ## What it does not do
 

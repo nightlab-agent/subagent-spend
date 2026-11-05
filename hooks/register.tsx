@@ -132,6 +132,17 @@ function showStatus($: EngineInterface, parts: Parts) {
   }
 }
 
+/** The cap's 80 percent notice, when one is due. */
+function showWarning($: EngineInterface) {
+  const warning = warnNow()
+  if (!warning) return
+  try {
+    $.ui.toast(warning)
+  } catch {
+    // a surface with no toasts: the cap still holds
+  }
+}
+
 export const register: Register = (on, options) => {
   const usageOn = options.usageFile !== false
   cap.usd = capOf(options.capUsd)
@@ -267,14 +278,7 @@ export const register: Register = (on, options) => {
 
   on('session.measure', async ($, e, next) => {
     if (e.cost) cap.spent = Math.max(cap.spent ?? 0, e.cost.usd)
-    const warning = warnNow()
-    if (warning) {
-      try {
-        $.ui.toast(warning)
-      } catch {
-        // a surface with no toasts: the cap still holds
-      }
-    }
+    showWarning($)
     if (!usageOn) return next(e)
     const mine = ++seq
     measured = e
@@ -324,6 +328,7 @@ export const register: Register = (on, options) => {
       } catch {
         // no cost here: the last measurement stands
       }
+      showWarning($)
     }
     if (reached()) {
       // answered here, no request made: the turn (or the subagent) ends on this text

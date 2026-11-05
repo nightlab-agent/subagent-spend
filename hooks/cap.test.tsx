@@ -10,12 +10,13 @@ const RUN = { origin: { kind: 'composer' }, presentation: { isFullscreen: false,
 type On = Parameters<TestBody>[1]
 type Dollar = Parameters<TestBody>[0]
 
-const world = (on: On) => {
+const world = (on: On, opts: { noToasts?: boolean } = {}) => {
   const seen = { requests: 0, toasts: [] as string[] }
   on('fs.write', () => ({ value: undefined }))
   on('ui.status', () => ({ value: undefined }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('ui.toast', (_, e) => {
+    if (opts.noToasts) throw new Error('no toasts here')
     seen.toasts.push(e.text)
     return { value: undefined }
   })
@@ -132,4 +133,65 @@ test('a /clear starts the cost over: the new session is not held on the old cost
   await $.session.end({ sessionId: 'sess-c', reason: 'clear' } as any)
   await step($, 1)
   expect(seen.requests).toBe(1)
+})
+
+// Cost that crosses 80 percent inside one turn: the read before each step is the only reading there is
+// until the turn ends. `reads` is what `$.session.usage()` answers, one figure per step; the last repeats.
+const reads = (on: On, usd: number[]) => {
+  let n = 0
+  on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 40000, window: 200000, percent: 20 }, rateLimits: [], cost: { usd: usd[Math.min(n++, usd.length - 1)]! } } }))
+}
+
+test('a tool loop crossing 80 percent inside a turn gets the notice, before the cap holds it', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  reads(on, [1, 1.35, 1.7, 2.05])
+  await $.session.measure(cost(1))
+  for (let i = 0; i < 4; i++) await step($, i)
+  expect(seen.requests).toBe(3)
+  await $.session.measure(cost(2.05))
+  expect(seen.toasts).toEqual(['Spend cap: $1.70 of $2.00 used'])
+})
+
+test('comparison: a step under 80 percent says nothing', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  reads(on, [1.59])
+  await step($, 0)
+  expect(seen.toasts).toEqual([])
+})
+
+test('the notice is said once: by later steps, by two steps at once, and by the measurement after', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  reads(on, [1.7, 1.75, 1.8])
+  await Promise.all([step($, 0, 'agent-a'), step($, 0, 'agent-b')])
+  await step($, 1)
+  await $.session.measure(cost(1.9))
+  expect(seen.toasts).toEqual(['Spend cap: $1.70 of $2.00 used'])
+})
+
+test('a surface that refuses the toast still gets its step', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on, { noToasts: true })
+  reads(on, [1.7])
+  expect((await step($, 0)).result.answer).toBe('fine')
+  expect(seen.requests).toBe(1)
+})
+
+test('a read still out when the session ends gives the new session no notice', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  on('session.end', (_, e) => ({ sessionId: e.sessionId }))
+  let answer = () => {}
+  const held = new Promise<void>(r => (answer = r))
+  let asked = false
+  on('session.usage', async () => {
+    asked = true
+    await held
+    return { value: { startedAt: 0, context: { tokens: 40000, window: 200000, percent: 20 }, rateLimits: [], cost: { usd: 1.7 } } }
+  })
+  await $.session.measure(cost(0))
+  const out = step($, 0)
+  for (let i = 0; i < 1000 && !asked; i++) await Promise.resolve()
+  expect(asked).toBe(true)
+  await $.session.end({ sessionId: 'sess-c', reason: 'clear' } as any)
+  answer()
+  await out
+  expect(seen.toasts).toEqual([])
 })
