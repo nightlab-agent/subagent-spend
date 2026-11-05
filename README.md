@@ -318,7 +318,7 @@ environment variable. Everything stays on your machine.
 | `agent.spawn` | Notes the subagent's type; opens the spend pane at the first one. | Nothing: the spawn goes on as asked, even if the mod fails. |
 | `tool.call` | Counts the call, and whether it came back as an error (turn counts). | Nothing: the call runs as asked and its result passes through. |
 | `session.measure` | Updates the usage figures, the status line and `latest.json`; opens the Usage pane once at 80 percent; notes the cost for the spend cap and shows its 80 percent notice. | Nothing: the event passes through untouched. |
-| `session.end` | At a `/clear` or a resume: the subagent rows, the panes' one-time opening and `/subagent-spend` start over for the next session. | Nothing: the event passes through untouched. |
+| `session.end` | At a `/clear` or a resume: the subagent rows, the panes' one-time opening, the cost the cap counts and `/subagent-spend` start over for the next session. | Nothing: the event passes through untouched. |
 | `turn.step` | With a spend cap: reads the cost before the step and shows the 80 percent notice if that read crossed it. Main conversation: counts the step and rewrites the day file. Subagent: adds the step's tokens to its row and rewrites the rows file. | Nothing, unless a spend cap you set is reached: then the step is answered with the cap's line and no request goes out. |
 
 ## What it does not do
@@ -335,6 +335,13 @@ session starts them over. A folder that cannot be written is named in the
 status line for the subagent rows, until a write lands or the session ends,
 and passed over in silence for the other two; the session goes on. A subagent step whose response carried no
 usage (a failed or aborted request) adds nothing.
+
+Around a `/clear`, Claude Code resets its cost a moment after the session
+ends. A cost read in that moment is left out, so the spend cap does not stop a
+step that starts then, even in a session already at the cap. A resume has the
+same moment and no such check: a cost read then counts for the session you
+resumed until a measurement or a later step passes it, and it can hold that
+session until you raise the cap.
 
 ## Remove it
 

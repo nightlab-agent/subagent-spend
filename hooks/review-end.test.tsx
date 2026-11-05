@@ -14,6 +14,8 @@ const cost = (usd: number): SessionMeasureInput => ({ context: CTX, rateLimits: 
 const world = (on: On) => {
   const seen = {
     requests: 0,
+    toasts: [] as string[],
+    started: 1000 as number | undefined,
     lines: [] as (string | undefined)[],
     writes: [] as { path: string; text: string }[],
     ledger: 0,
@@ -35,7 +37,7 @@ const world = (on: On) => {
   })
   on('ui.status', (_, e) => (seen.lines.push(e.text), { value: undefined }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
-  on('ui.toast', () => ({ value: undefined }))
+  on('ui.toast', (_, e) => (seen.toasts.push(e.text), { value: undefined }))
   on('session.id', () => ({ value: seen.sid }))
   on('session.end', async (_, e) => {
     seen.ending = true
@@ -52,7 +54,7 @@ const world = (on: On) => {
     return { value: { isSet: true, version: 1 } }
   })
   on('session.measure', (_, e) => ({ changed: e.changed }))
-  on('session.usage', () => ({ value: { startedAt: 0, context: CTX, rateLimits: [], cost: { usd: seen.ledger } } }))
+  on('session.usage', () => ({ value: { startedAt: seen.started, context: CTX, rateLimits: [], cost: { usd: seen.ledger } } as any }))
   on('turn.step', async function* (_, e) {
     seen.requests++
     return { turnId: e.turnId, index: e.index, answer: 'fine', toolUses: [], stopReason: 'end_turn', usage: e.agentId ? u : null }
@@ -66,7 +68,14 @@ const step = async ($: Dollar, index: number, agentId?: string) => {
     if (n.done) return n.value
   }
 }
-const end = ($: Dollar) => $.session.end({ sessionId: 'old', reason: 'clear', resume: { id: 'old' } } as any)
+const end = ($: Dollar, reason = 'clear') => $.session.end({ sessionId: 'old', reason, resume: { id: 'old' } } as any)
+// the engine's reset, past the end of the chain: the cost and the start move at once, the id right after
+const engineResets = (seen: ReturnType<typeof world>, usd: number) => {
+  seen.ledger = usd
+  seen.started = 2000
+  seen.sid = 'new'
+}
+const spendCap = async ($: Dollar) => (await $.command.run({ command: 'spend-cap', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 100 } })).text
 const gate = () => {
   let open = () => {}
   const hold = new Promise<void>(r => (open = r))
@@ -160,4 +169,91 @@ test('comparison: with no read while the end step runs the new session steps', {
   seen.requests = 0
   await step($, 0)
   expect(seen.requests).toBe(1)
+})
+
+test('a subagent step between session.end and the ledger reset leaves the new session its own cost', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.ledger = 1.7
+  await $.session.measure(cost(1))
+  await end($)
+  await step($, 0, 'bg')
+  engineResets(seen, 0.01)
+  await step($, 1)
+  expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $0.01.')
+})
+
+test('comparison: the same step after the ledger reset counts', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.ledger = 1.7
+  await $.session.measure(cost(1))
+  await end($)
+  engineResets(seen, 0.01)
+  await step($, 0, 'bg')
+  expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $0.01.')
+})
+
+test('an old cost past the cap, read in that gap, does not hold the new session', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.ledger = 2.05
+  await $.session.measure(cost(1))
+  await end($)
+  await step($, 0, 'bg')
+  engineResets(seen, 0.01)
+  seen.requests = 0
+  await step($, 1)
+  expect(seen.requests).toBe(1)
+})
+
+test("a read in that gap does not spend the new session's 80 percent notice", { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.ledger = 1.7
+  await $.session.measure(cost(1))
+  await end($)
+  await step($, 0, 'bg')
+  engineResets(seen, 1.65)
+  seen.toasts.length = 0
+  await step($, 1)
+  expect(seen.toasts).toEqual(['Spend cap: $1.65 of $2.00 used'])
+})
+
+test('a measurement raised in that gap leaves the new session its own cost, and the line alone', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.ledger = 1.7
+  await $.session.measure(cost(1.7))
+  await end($)
+  await $.session.measure(cost(1.7))
+  expect(seen.lines.at(-1) ?? '').not.toContain('$1.70')
+  engineResets(seen, 0.01)
+  await step($, 1)
+  expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $0.01.')
+})
+
+test('comparison: a measurement after the ledger reset counts, and every one after', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  await $.session.measure(cost(1.7))
+  await end($)
+  engineResets(seen, 0.2)
+  await $.session.measure(cost(0.2))
+  expect(seen.lines.at(-1)).toContain('$0.20')
+  seen.ledger = 0.3
+  await $.session.measure(cost(0.3))
+  expect(seen.lines.at(-1)).toContain('$0.30')
+})
+
+test('comparison: another reason for ending keeps no key, so a session with the same start still counts', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.ledger = 1
+  await end($, 'resume') // a fork of the same session keeps its first launch's start
+  await step($, 0)
+  expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $1.00.')
+})
+
+test('comparison: a build that reports no start still counts the cost after a /clear', { options: { capUsd: 2 } }, async ($, on) => {
+  const seen = world(on)
+  seen.started = undefined
+  await end($)
+  engineResets(seen, 0.5)
+  seen.started = undefined
+  await step($, 0)
+  expect(await spendCap($)).toBe('Spend cap $2.00. Cost so far $0.50.')
 })

@@ -20,6 +20,8 @@ The form is Keep a Changelog; versions follow SemVer.
 - A cap set or lifted with `/spend-cap` now outlives a reload of the plugin; it went back to `capUsd`. A new `capUsd`
   in `/config` still wins.
 - A late measurement no longer moves the status line's cost back below the figure the cap holds on.
+- A cost or measurement from the moment between a `/clear` and Claude Code's reset of its cost no longer lands on the
+  new session. It could hold that session at the old cost, or use up its 80 percent notice.
 
 ## 0.8.3 - 2026-11-03
 

@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register, SessionMeasureInput } from 'claude-code'
+import type { EngineInterface, Register, SessionMeasureInput, SessionUsage } from 'claude-code'
 
 import type { HeldCap, Row, Shown } from '../types'
 import { addStep, count, fmt, latest, nextStep, rowsText, paneLines, rows, spendStatus, types } from './spend'
@@ -170,6 +170,12 @@ export const register: Register = (on, options) => {
   // reading is the newest: a read that answers late with a lower figure never brings it back. Each
   // session end starts a new count, and a read still out for the session left is dropped.
   let costSession = 0
+  // A /clear resets the cost ledger after session.end is over (2.1.312: past a yield), and a step or measurement can
+  // land between. Cost and start reset together (SessionUsage.startedAt: what the figures count from), so a reading
+  // with the left session's start is the left session's. A fork or resume may keep that start: only a /clear sets this.
+  let leftStart: number | null = null
+  /** Whether a usage read made while `costSession` stood at `session` belongs to a session already left. */
+  const ofLeft = (session: number, usage: SessionUsage) => session !== costSession || usage.startedAt === leftStart
   /** The next cost reading is the new session's. The first one comes with its first measurement; the cap the user set stays. */
   const startCost = () => {
     cap.spent = null
@@ -284,6 +290,11 @@ export const register: Register = (on, options) => {
   on('session.end', async ($, e, next) => {
     startOver(e.sessionId)
     startCost()
+    if (e.reason === 'clear') {
+      // asked before the end step, not waited for: this chain shares one short bound. No answer, no key: a cost read
+      // before the ledger's reset then counts for the new session
+      $.session.usage().then(u => (leftStart = u.startedAt ?? null), () => undefined)
+    }
     parts.spend = undefined
     parts.notice = undefined
     // cost and context belong to the session left: the panes and the line wait for the new one's first reading
@@ -305,6 +316,15 @@ export const register: Register = (on, options) => {
   })
 
   on('session.measure', async ($, e, next) => {
+    if (leftStart !== null) {
+      // a measurement carries no start, so it asks
+      const session = costSession
+      try {
+        if (ofLeft(session, await $.session.usage())) return next(e)
+      } catch {
+        // no answer: the measurement stands
+      }
+    }
     if (e.cost) cap.spent = Math.max(cap.spent ?? 0, e.cost.usd)
     showWarning($)
     if (!usageOn) return next(e)
@@ -347,7 +367,7 @@ export const register: Register = (on, options) => {
       const session = costSession
       try {
         const usage = await $.session.usage()
-        const usd = session === costSession ? usage.cost?.usd : undefined
+        const usd = ofLeft(session, usage) ? undefined : usage.cost?.usd
         if (usd !== undefined && usd >= (cap.spent ?? 0)) cap.spent = usd
         if (usd !== undefined && usd === cap.spent && usageOn && measured) {
           // the line's dollar figure is the one the cap holds on, not the last turn's
