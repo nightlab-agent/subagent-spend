@@ -10,8 +10,11 @@ type On = Parameters<TestBody>[1]
 type Dollar = Parameters<TestBody>[0]
 
 const world = (on: On) => {
-  const seen = { lines: [] as (string | undefined)[], engineCost: 0 }
-  on('fs.write', () => ({ value: undefined }))
+  const seen = { lines: [] as (string | undefined)[], engineCost: 0, fail: false }
+  on('fs.write', () => {
+    if (seen.fail) throw new Error('read-only file system')
+    return { value: undefined }
+  })
   on('ui.status', (_, e) => {
     seen.lines.push(e.text)
     return { value: undefined }
@@ -23,13 +26,14 @@ const world = (on: On) => {
   on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 40000, window: 200000, percent: 20 }, rateLimits: [], cost: { usd: seen.engineCost } } }))
   on('turn.step', async function* (_, e) {
     seen.engineCost += 0.11
-    return { turnId: e.turnId, index: e.index, answer: 'tool', toolUses: [], stopReason: 'tool_use', usage: null }
+    const usage = e.agentId ? { input_tokens: 10, output_tokens: 5, cache_read_input_tokens: 0, cache_creation_input_tokens: 0, model: 'claude-opus-5-5' } : null
+    return { turnId: e.turnId, index: e.index, answer: 'tool', toolUses: [], stopReason: 'tool_use', usage }
   })
   return seen
 }
 
-const step = async ($: Dollar, turnId: string, index: number) => {
-  const s = $.turn.step({ turnId, index, model: 'claude-opus-5-5', messageCount: 3 + index })
+const step = async ($: Dollar, turnId: string, index: number, agentId?: string) => {
+  const s = $.turn.step({ turnId, index, model: 'claude-opus-5-5', messageCount: 3 + index, ...(agentId ? { agentId } : {}) })
   for (;;) {
     const n = await s.next()
     if (n.done) return n.value
@@ -50,4 +54,29 @@ test('review control: with a cap, after a measurement the line shows that measur
   const seen = world(on)
   await $.session.measure(cost(1.5))
   expect(seen.lines.at(-1)).toContain('$1.50')
+})
+
+const usage5h = { ...cost(1), rateLimits: [{ kind: 'five_hour', percentUsed: 40 }, { kind: 'seven_day', percentUsed: 12 }] } as SessionMeasureInput
+
+test('the unwritten rows notice stands beside the rows figures, with the cost inside 80 columns', { options: { capUsd: 5 } }, async ($, on) => {
+  const seen = world(on)
+  seen.fail = true
+  await $.session.measure(usage5h)
+  await step($, 't1', 0, 'agent-s')
+  await step($, 't1', 1)
+  const line = seen.lines.at(-1) ?? ''
+  expect(line).toContain('rows file not written')
+  expect(line).toContain('subagents 1')
+  expect(line.slice(0, 80)).toContain('$1.00')
+})
+
+test('comparison: with writes landing the line has the same figures and no notice', { options: { capUsd: 5 } }, async ($, on) => {
+  const seen = world(on)
+  await $.session.measure(usage5h)
+  await step($, 't1', 0, 'agent-s')
+  await step($, 't1', 1)
+  const line = seen.lines.at(-1) ?? ''
+  expect(line).not.toContain('rows file not written')
+  expect(line).toContain('subagents 1')
+  expect(line.slice(0, 80)).toContain('$1.00')
 })

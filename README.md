@@ -186,7 +186,8 @@ of consecutive main-conversation tool errors.
 
 **The status line** is one line for all three. Each part keeps its own
 piece, and the line shows the pieces that have a reading, in the order
-subagents, usage, turns. A part that is off, or has nothing yet, adds
+subagents, usage, turns, with the "rows file not written" notice between
+usage and turns when it is up. A part that is off, or has nothing yet, adds
 nothing. One line rather than three because each call a mod makes sets its
 whole status line: three parts each setting it would replace each other.
 

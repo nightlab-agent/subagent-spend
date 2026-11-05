@@ -152,7 +152,7 @@ test('a failed write does not fail the step and is named in the status line', as
 
   const r = await step($, 6, 'agent-e')
   expect(r.answer).toBe('fine')
-  expect(statuses.some(s => (s ?? '').startsWith('subagent-spend: rows file not written'))).toBe(true)
+  expect(statuses.some(s => (s ?? '').includes('subagent-spend: rows file not written'))).toBe(true)
 })
 
 // A rows folder that comes and goes. `hold` keeps every write waiting until it is released.

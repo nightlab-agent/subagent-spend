@@ -23,14 +23,14 @@ import { OPEN_AT, bar, fileText, shownOf, shownStatus, usageLines, usageStatus }
 //
 // One status line: three mods each setting the whole line would overwrite each other, so
 // each part keeps its own piece and the line shows the pieces that have a reading, in the
-// order spend | usage | turns.
+// order spend | usage | notice | turns.
 //
 // - cap (option `capUsd`, off by default): at the cap the next model step is answered by the
 //   mod with no request made (./cap.ts).
 //
 // DESIGN NOTE, deliberately narrow: apart from the cap the user sets, it never denies, never rewrites a
 // request or an event, reads only the events the engine hands it and sends nothing off the machine. A failed
-// write is swallowed (the spend part names it in the status line until a write lands): the files are
+// write is swallowed (a failed rows write is named in the status line until a write lands): the files are
 // advisory, and a gauge that stops the engine would be worse than no gauge.
 
 const SPEND_PANE = 'subagent-spend'
@@ -122,11 +122,11 @@ async function writeLatest($: EngineInterface, dir: string, f: Out) {
 }
 
 /** Each part's piece of the status line; undefined until that part has a reading. */
-type Parts = { usage?: string; turns?: string; spend?: string }
+type Parts = { usage?: string; turns?: string; spend?: string; notice?: string }
 
-/** The one status line: the pieces that have a reading, spend | usage | turns (spend first: a narrow window cuts the end). */
+/** The one status line: the pieces that have a reading, spend | usage | notice | turns (the figures first: a narrow window cuts the end). */
 function showStatus($: EngineInterface, parts: Parts) {
-  const line = [parts.spend, parts.usage, parts.turns].filter(Boolean).join(' | ')
+  const line = [parts.spend, parts.usage, parts.notice, parts.turns].filter(Boolean).join(' | ')
   try {
     $.ui.status(line || undefined)
   } catch {
@@ -159,8 +159,6 @@ export const register: Register = (on, options) => {
   const own = (dir: string, name: string) => dir.replace(/[\\/]+$/, '').split(/[\\/]/).at(-1) === name
   const files = { spend: out(own(spendDir, '.subagent-spend')), usage: out(own(usageDir, '.usage-file')), turns: out(own(turnsDir, '.turn-tally')) }
   const parts: Parts = {}
-  /** Why the last rows write failed; on the status line in place of the spend figures until one lands. */
-  let spendError: string | undefined
   // Numbers each measurement in the order the engine raised them; latest.json is written from the newest.
   let seq = 0
   /** The last measurement, whose windows and context the status line keeps between measurements. */
@@ -268,8 +266,8 @@ export const register: Register = (on, options) => {
   on('session.end', async ($, e, next) => {
     startOver(e.sessionId)
     startCost()
-    spendError = undefined
     parts.spend = undefined
+    parts.notice = undefined
     // cost and context belong to the session left: the panes and the line wait for the new one's first reading
     parts.usage = undefined
     measured = undefined
@@ -382,20 +380,18 @@ export const register: Register = (on, options) => {
     } catch {
       // the pane misses one redraw; the rows file is the record
     }
-    parts.spend = spendError ?? spendStatus()
+    parts.spend = spendStatus()
     showStatus($, parts)
     try {
-      if ((await writeLatest($, spendDir, files.spend)) && spendError) {
-        spendError = undefined
-        parts.spend = spendStatus()
+      if ((await writeLatest($, spendDir, files.spend)) && parts.notice) {
+        parts.notice = undefined
         showStatus($, parts)
       }
     } catch (err) {
       // a write of the session left: on the new session nothing would take its notice off
       if (writing !== costSession) return response
       // unwritable folder: the line says so until a write lands, and the session goes on
-      spendError = `subagent-spend: rows file not written (${err instanceof Error ? err.message : String(err)})`
-      parts.spend = spendError
+      parts.notice = `subagent-spend: rows file not written (${err instanceof Error ? err.message : String(err)})`
       showStatus($, parts)
     }
     return response

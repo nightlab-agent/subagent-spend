@@ -6,8 +6,9 @@ The form is Keep a Changelog; versions follow SemVer.
 - The npm description fits the registry's 255 characters; it was cut in the middle of a word.
 - The 80 percent spend notice now also comes from the cost read before each step. A tool loop that crossed 80 percent
   and reached the cap inside one turn got no notice, because only the end-of-turn measurement could show it.
-- The "rows file not written" notice now stays in the status line beside the other figures until a write lands or the
-  session ends. It was replaced by the next main-loop step and never came back.
+- The "rows file not written" notice now stays in the status line after the subagent and usage figures until a write
+  lands or the session ends. It was replaced by the next main-loop step and never came back, and it took the place of
+  the subagent figures and pushed the cost toward the end of the line.
 - The by-hand script's status line rounds as the mod does: 12500 tokens read 12k there and 13k in the mod.
 - The Usage pane reads "resets in <1m" in a window's last minute; it read "resets in 0h 00m".
 - `/spend-cap` takes plain dollars only. `0x10` set a $16 cap and `1e2` a $100 cap; both are now refused, and so are
