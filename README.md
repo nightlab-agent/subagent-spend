@@ -298,10 +298,16 @@ the API prices each kind of token differently, so this is a token count
 Check it on your own subagents: run one, find `subagent_tokens` in the
 result the Agent tool returns, then find the row with the same `agent_id`
 in the file. `context` should equal the figure; `total` is what went
-through. The table, for one session or all of them:
+through. The report uses the Python script even when the plugin collects
+the rows. Save [subagent_spend.py](subagent_spend.py) somewhere stable, or
+use the copy in your clone or installed npm package; you do not need to
+enable its by-hand hook or status line. Run it from the project folder
+whose rows you want; if you set `dir`, also set `$SUBAGENT_SPEND_DIR` to that
+folder. Replace the script path below with its full path. To show the table
+for all stored sessions:
 
 ```
-python3 -I subagent_spend.py report --all
+python3 -I /path/to/subagent_spend.py report --all
 ```
 
 ## What each hook does
@@ -346,13 +352,15 @@ session until you raise the cap.
 ## Remove it
 
 1. Uninstall the mod: `/plugin uninstall subagent-spend` at the Claude Code
-   prompt, or `claude plugin uninstall subagent-spend` from a shell. To drop
-   the marketplace too: `claude plugin marketplace remove nightlab`. (These
-   are the commands Claude Code 2.1.312 lists in its help; the uninstall has
-   not yet been run on a real install of this mod.)
+   prompt, or `claude plugin uninstall subagent-spend` from a shell for a
+   user-scope install. For a project or local install, append `--scope project`
+   or `--scope local` to the shell command, matching the scope you picked at
+   install. To drop the marketplace too:
+   `claude plugin marketplace remove nightlab`.
 2. In each project where a session ran with it, delete the folders it wrote,
-   with everything in them (each holds a `.gitignore` with `*`, so git never
-   tracked them):
+   with everything in them (the default folders ignore themselves in git;
+   a custom folder of another name needs your own ignore rule, as described
+   under [What it writes](#what-it-writes)):
    - `.subagent-spend/` (the subagent rows, `<session_id>.jsonl`), or the
      folder you set in `dir`;
    - `.usage-file/` (`latest.json`), or the folder you set in `usageFileDir`;
@@ -374,6 +382,9 @@ or under an option folder).
 
 ## Tests
 
+Run from the root of a source clone; the npm package does not include the
+test suite:
+
 ```
 sh tests/release.sh
 ```
@@ -386,7 +397,7 @@ session with `claude --plugin-dir .` from the clone, or set `CC_TYPES` to
 that file). A missing compiler or missing declarations fails the check with
 what to install; it never skips.
 
-That runs `claude plugin validate .`; `claude plugin test .`, 142 tests
+That runs `claude plugin validate .`; `claude plugin test .`, the plugin tests
 through the test runner Claude Code ships for plugins, with a mocked file
 system and mocked Claude Code events (the tests of the three former mods, one per
 option turned off, and tests where events finish out of order, arrive two at

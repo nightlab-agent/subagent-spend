@@ -2,6 +2,9 @@
 
 The form is Keep a Changelog; versions follow SemVer.
 
+## 0.8.5 - 2026-11-06
+- README: the report command names the script's full path and working folder; uninstall names `--scope` for a project or local install; removal no longer says every folder ignores itself in git; tests run from a source clone. No code change.
+
 ## 0.8.4 - 2026-11-04
 - Lowering or changing `capUsd` now ends a cap set with `/spend-cap` for good. Before, changing the option away and
   back brought the old `/spend-cap` figure back.
